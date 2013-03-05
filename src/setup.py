@@ -26,7 +26,7 @@ setup(name = "icepapcms",
                     ('share/icepapcms/templates', glob.glob("templates/*.*"))
                     ],
       
-      scripts = ["icepapcms","icepapcms.py"],
+      scripts = ["icepapcms"],
 	  console = ["icepapcms.py"],
 	  windows = [
         {
