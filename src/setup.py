@@ -22,8 +22,8 @@ setup(name = "icepapcms",
                   "ui_icepapcms.icepapdriver_widget", 
                   "ui_icepapcms.icepapdriver_widget.Led", 
                   "ui_icepapcms.Led"],
-      data_files = [('db', glob.glob("db/*.sql")),
-                    ('templates', glob.glob("templates/*.*"))
+      data_files = [('share/icepapcms/db', glob.glob("db/*.sql")),
+                    ('share/icepapcms/templates', glob.glob("templates/*.*"))
                     ],
       
       scripts = ["icepapcms","icepapcms.py"],
