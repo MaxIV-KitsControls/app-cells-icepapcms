@@ -14,6 +14,10 @@ BuildRoot:		%{_builddir}/%{name}-%{version}-%{release}
 BuildRequires:  python-setuptools
 Requires:       python-pyicepap
 Requires:       python-storm
+# ZODB3 is not yet available for el6 
+%if 0%{?fedora} > 13
+Requires:       python-ZODB3
+%endif
 
 %description
 IcePAP CMS application
@@ -40,6 +44,7 @@ cd src
 %changelog
 * Fri Apr 12 2013 Andreas Persson <andreas_g.persson@maxlab.lu.se> - 1.16-2
 - new name for pyIcePAP package
+- depend on python-ZODB3 on fedora
 
 * Tue Mar 05 2013 Andreas Persson <andreas_g.persson@maxlab.lu.se> - 1.16-1
 - initial package
