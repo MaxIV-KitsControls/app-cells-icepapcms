@@ -38,7 +38,7 @@ cd src
 %{python_sitelib}/*
 
 %changelog
-* Fri Apr 11 2013 Andreas Persson <andreas_g.persson@maxlab.lu.se> - 1.16-2
+* Fri Apr 12 2013 Andreas Persson <andreas_g.persson@maxlab.lu.se> - 1.16-2
 - new name for pyIcePAP package
 
 * Tue Mar 05 2013 Andreas Persson <andreas_g.persson@maxlab.lu.se> - 1.16-1
