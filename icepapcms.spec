@@ -2,7 +2,7 @@
 
 Name:           icepapcms
 Version:        1.16
-Release:        1%{?dist}.maxlab
+Release:        2%{?dist}.maxlab
 Summary:        IcePAP CMS application
 
 Group:          Applications/Engineering
@@ -12,7 +12,7 @@ Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRoot:		%{_builddir}/%{name}-%{version}-%{release}
 BuildRequires:  python-setuptools
-Requires:		pyIcePAP
+Requires:       python-pyicepap
 Requires:       python-storm
 
 %description
@@ -38,5 +38,8 @@ cd src
 %{python_sitelib}/*
 
 %changelog
+* Fri Apr 11 2013 Andreas Persson <andreas_g.persson@maxlab.lu.se> - 1.16-2
+- new name for pyIcePAP package
+
 * Tue Mar 05 2013 Andreas Persson <andreas_g.persson@maxlab.lu.se> - 1.16-1
 - initial package
