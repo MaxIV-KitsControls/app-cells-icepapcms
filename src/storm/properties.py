@@ -28,15 +28,15 @@ from storm.expr import Column, Undef
 from storm.variables import (
     Variable, VariableFactory, BoolVariable, IntVariable, FloatVariable,
     DecimalVariable, RawStrVariable, UnicodeVariable, DateTimeVariable,
-    DateVariable, TimeVariable, TimeDeltaVariable, PickleVariable,
-    ListVariable, EnumVariable)
+    DateVariable, TimeVariable, TimeDeltaVariable, UUIDVariable,
+    PickleVariable, JSONVariable, ListVariable, EnumVariable)
 
 
 
 __all__ = ["Property", "SimpleProperty",
            "Bool", "Int", "Float", "Decimal", "RawStr", "Unicode",
-           "DateTime", "Date", "Time", "TimeDelta", "Enum", "Pickle", "List",
-           "PropertyRegistry"]
+           "DateTime", "Date", "Time", "TimeDelta", "UUID", "Enum",
+           "Pickle", "JSON", "List", "PropertyRegistry"]
 
 
 class Property(object):
@@ -54,7 +54,7 @@ class Property(object):
         obj_info = get_obj_info(obj)
         if cls is None:
             # Don't get obj.__class__ because we don't trust it
-            # (might be proxied or whatever). # XXX UNTESTED!
+            # (might be proxied or whatever).
             cls = obj_info.cls_info.cls
         column = self._get_column(cls)
         return obj_info.variables[column].get()
@@ -62,24 +62,23 @@ class Property(object):
     def __set__(self, obj, value):
         obj_info = get_obj_info(obj)
         # Don't get obj.__class__ because we don't trust it
-        # (might be proxied or whatever). # XXX UNTESTED!
+        # (might be proxied or whatever).
         column = self._get_column(obj_info.cls_info.cls)
         obj_info.variables[column].set(value)
 
     def __delete__(self, obj):
         obj_info = get_obj_info(obj)
         # Don't get obj.__class__ because we don't trust it
-        # (might be proxied or whatever). # XXX UNTESTED!
+        # (might be proxied or whatever).
         column = self._get_column(obj_info.cls_info.cls)
         obj_info.variables[column].delete()
 
-    def _detect_name(self, used_cls):
+    def _detect_attr_name(self, used_cls):
         self_id = id(self)
         for cls in used_cls.__mro__:
-            for attr, prop in cls.__dict__.iteritems():
+            for attr, prop in cls.__dict__.items():
                 if id(prop) == self_id:
-                    self._name = attr
-                    return
+                    return attr
         raise RuntimeError("Property used in an unknown class")
 
     def _get_column(self, cls):
@@ -95,9 +94,12 @@ class Property(object):
             cls._storm_columns = {}
             column = None
         if column is None:
+            attr = self._detect_attr_name(cls)
             if self._name is None:
-                self._detect_name(cls)
-            column = PropertyColumn(self, cls, self._name, self._primary,
+                name = attr
+            else:
+                name = self._name
+            column = PropertyColumn(self, cls, attr, name, self._primary,
                                     self._variable_class,
                                     self._variable_kwargs)
             cls._storm_columns[self] = column
@@ -106,10 +108,11 @@ class Property(object):
 
 class PropertyColumn(Column):
 
-    def __init__(self, prop, cls, name, primary,
+    def __init__(self, prop, cls, attr, name, primary,
                  variable_class, variable_kwargs):
         Column.__init__(self, name, cls, primary,
                         VariableFactory(variable_class, column=self,
+                                        validator_attribute=attr,
                                         **variable_kwargs))
 
         self.cls = cls # Used by references
@@ -163,8 +166,14 @@ class Time(SimpleProperty):
 class TimeDelta(SimpleProperty):
     variable_class = TimeDeltaVariable
 
+class UUID(SimpleProperty):
+    variable_class = UUIDVariable
+
 class Pickle(SimpleProperty):
     variable_class = PickleVariable
+
+class JSON(SimpleProperty):
+    variable_class = JSONVariable
 
 
 class List(SimpleProperty):

@@ -17,6 +17,8 @@ class Location(Storm):
         
     def __storm_loaded__(self):
         self.initialize()
+
+    def loadSystemsfromDB(self):
         for system in self.systems:
             self._inmemory_systems[system.name] = system
     
@@ -55,6 +57,9 @@ class IcepapSystem(Storm):
     
     def __storm_loaded__(self):
         self.initialize()
+
+        
+    def loadDriversfromDB(self):
         for driver in self.drivers:
             self._inmemory_drivers[driver.addr] = driver
         
@@ -76,6 +81,8 @@ class IcepapSystem(Storm):
     def getDrivers(self, in_memory = True):
         #return self.drivers.order_by(IcepapDriver.addr)
         if in_memory:
+            if len(self._inmemory_drivers) == 0:
+                self.loadDriversfromDB()
             return self._inmemory_drivers.values()
         else:
             return self.drivers
@@ -119,7 +126,12 @@ class IcepapSystem(Storm):
             else:
                 driver_cmp = driver_list[addr]
                 if not driver == driver_cmp :
-                    conflictsList.append([Conflict.DRIVER_CHANGED, self, addr])
+                    # HOOK TO CHECK AUTO-SOLVE CONFLICTS
+                    #conflictsList.append([Conflict.DRIVER_CHANGED, self, addr])
+                    dsp_cfg = driver_cmp.current_cfg
+                    db_cfg = driver.current_cfg
+                    conflict = self.checkAutoSolvedConflict(dsp_cfg, db_cfg)
+                    conflictsList.append([conflict, self, addr])
                     self.child_conflicts += 1
 
         ''' checking for new drivers '''        
@@ -141,6 +153,65 @@ class IcepapSystem(Storm):
             ##    conflictsList.append([Conflict.NEW_DRIVER, self, addr])
             
         return conflictsList
+
+    def checkAutoSolvedConflict(self, dsp_cfg, db_cfg):
+        # 20130710 ESRF ASKED FOR A HOOK TO 'SKIP' SOME CONFLICTS
+        # ISSUE 053 in WIKI MINUTES
+        # http://wikiserv.esrf.fr/esl/index.php/IcePAP_minute_130708
+        #
+        # TWO NEW CONFLICT TYPES ADDED: DRIVER_AUTOSOLVE, DRIVER_AUTOSOLVE_EXPERT
+        # Since there is the possibility to keep current behaviour, the method can return also DRIVER_CHANGED
+
+        # NOTE: u'VER' and u'IPAPNAME' are also available to resolve conflicts...
+
+        # NOTE: configs have the .getParameter(par) method
+        #       BUT dsp values are not stored in the database, so in_memory has to be set to True
+        ### par = u'VER'
+        ### print 'dsp', par, dsp_cfg.getParameter(par, in_memory=True)
+        ### print 'db', par, db_cfg.getParameter(par)
+
+        # NOTE: it is also possible to operate with lists:
+        ###dsp_values = dsp_cfg.toList()
+        ###db_values = db_cfg.toList()
+        ###for p,v in dsp_values:
+        ###    if p == par:
+        ###        print 'dsp', p, v
+        ###for p,v in db_values:
+        ###    if p == par:
+        ###        print 'db', p, v
+
+        try:
+            dsp_cfg_ver = float(dsp_cfg.getParameter(unicode("VER"), 
+                                                     in_memory=True))
+        except:
+            print "ERROR: missing VERsion parameter in DSP config"
+            return Conflict.DRIVER_CHANGED
+
+        try:
+            db_cfg_ver  = float(db_cfg.getParameter(unicode("VER")))
+        except:
+            print "ERROR: missing VERsion parameter in database config"
+            return Conflict.DRIVER_CHANGED
+
+        #
+        if((dsp_cfg_ver==2.0) and (db_cfg_ver<2.0) and (db_cfg_ver>=1.22)):
+            dsp_values  = dsp_cfg.toList()
+            db_values   = db_cfg.toList()
+            diff_values = set(dsp_values).difference(db_values)
+            for p,v in diff_values:
+                if p == 'VER':
+                   continue
+                if not p in ['EXTDISABLE','PCLMODE','EXTBUSY','POSUPDATE','LNKNAME','EXTPOWER','OUTPSRC']:
+                   #print "DSP VERSION: ",dsp_cfg_ver
+                   #print "DB  VERSION: ",db_cfg_ver
+                   #print "Auto resolving conflicts: Unexpected paramater: ",p
+                   return Conflict.DRIVER_CHANGED
+            return Conflict.DRIVER_AUTOSOLVE
+
+
+        #return Conflict.DRIVER_AUTOSOLVE
+        #return Conflict.DRIVER_AUTOSOLVE_EXPERT
+        return Conflict.DRIVER_CHANGED
 
 from icepapdriver import IcepapDriver
 

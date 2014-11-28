@@ -15,18 +15,13 @@ setup(name = "icepapcms",
       url = "http://www.cells.es",
       #packages = ["storm", "storm.databases", "lib_icepapcms", "lib_icepapcms/PyQt4", "lib_icepapcms/serial", "lib_icepapcms/pyIcePAP", "lib_icepapcms.icepapzodb", "ui_icepapcms", "ui_icepapcms.icepapdriver_widget", "ui_icepapcms.Led"],
       #packages = ["storm", "storm.databases", "lib_icepapcms", "lib_icepapcms.icepapzodb", "ui_icepapcms", "ui_icepapcms.icepapdriver_widget", "ui_icepapcms.Led"],
-      packages = ["lib_icepapcms", 
-                  "lib_icepapcms.icepapzodb", 
-                  "lib_icepapcms.IPy", 
-                  "ui_icepapcms", 
-                  "ui_icepapcms.icepapdriver_widget", 
-                  "ui_icepapcms.icepapdriver_widget.Led", 
-                  "ui_icepapcms.Led"],
-      data_files = [('share/icepapcms/db', glob.glob("db/*.sql")),
-                    ('share/icepapcms/templates', glob.glob("templates/*.*"))
+      packages = ["storm", "storm.databases", "lib_icepapcms", "lib_icepapcms.icepapzodb", "lib_icepapcms.IPy", "ui_icepapcms", "ui_icepapcms.icepapdriver_widget", "ui_icepapcms.icepapdriver_widget.Led", "ui_icepapcms.Led"],
+      data_files = [('doc', glob.glob("doc/*.*")),
+                    ('db', glob.glob("db/*.sql")),
+                    ('templates', glob.glob("templates/*.*"))
                     ],
       
-      scripts = ["icepapcms"],
+      scripts = ["icepapcms","icepapcms.py"],
 	  console = ["icepapcms.py"],
 	  windows = [
         {

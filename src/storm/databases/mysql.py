@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from datetime import time
+from datetime import time, timedelta
 from array import array
 import sys
 
@@ -30,10 +30,14 @@ try:
 except ImportError:
     MySQLdb = dummy
 
-from storm.expr import (compile, Select, compile_select, Undef, And, Eq,
-                        SQLRaw, SQLToken, is_safe_token)
+from storm.expr import (
+    compile, Insert, Select, compile_select, Undef, And, Eq,
+    SQLRaw, SQLToken, is_safe_token)
+from storm.variables import Variable
 from storm.database import Database, Connection, Result
-from storm.exceptions import install_exceptions, DatabaseModuleError
+from storm.exceptions import (
+    install_exceptions, DatabaseModuleError, OperationalError)
+from storm.variables import IntVariable
 
 
 install_exceptions(MySQLdb)
@@ -57,14 +61,6 @@ def compile_sql_token_mysql(compile, expr, state):
 
 class MySQLResult(Result):
 
-    def get_insert_identity(self, primary_key, primary_variables):
-        equals = []
-        for column, variable in zip(primary_key, primary_variables):
-            if not variable.is_defined():
-                variable = SQLRaw(self._raw_cursor.lastrowid)
-            equals.append(Eq(column, variable))
-        return And(*equals)
-
     @staticmethod
     def from_database(row):
         """Convert MySQL-specific datatypes to "normal" Python types.
@@ -84,6 +80,45 @@ class MySQLConnection(Connection):
     result_factory = MySQLResult
     param_mark = "%s"
     compile = compile
+
+    def execute(self, statement, params=None, noresult=False):
+        if (isinstance(statement, Insert) and
+            statement.primary_variables is not Undef):
+
+            result = Connection.execute(self, statement, params)
+
+            # The lastrowid value will be set if:
+            #  - the table had an AUTO INCREMENT column, and
+            #  - the column was not set during the insert or set to 0
+            #
+            # If these conditions are met, then lastrowid will be the
+            # value of the first such column set.  We assume that it
+            # is the first undefined primary key variable.
+            if result._raw_cursor.lastrowid:
+                for variable in statement.primary_variables:
+                    if not variable.is_defined():
+                        variable.set(result._raw_cursor.lastrowid,
+                                     from_db=True)
+                        break
+            if noresult:
+                result = None
+            return result
+        return Connection.execute(self, statement, params, noresult)
+
+    def to_database(self, params):
+        for param in params:
+            if isinstance(param, Variable):
+                param = param.get(to_db=True)
+            if isinstance(param, timedelta):
+                yield str(param)
+            else:
+                yield param
+
+    def is_disconnection_error(self, exc, extra_disconnection_errors=()):
+        # http://dev.mysql.com/doc/refman/5.0/en/gone-away.html
+        return (isinstance(exc, (OperationalError,
+                                 extra_disconnection_errors)) and
+                exc.args[0] in (2006, 2013)) # (SERVER_GONE_ERROR, SERVER_LOST)
 
 
 class MySQL(Database):
@@ -117,10 +152,38 @@ class MySQL(Database):
 
         self._connect_kwargs["conv"] = self._converters
         self._connect_kwargs["use_unicode"] = True
+        self._connect_kwargs["charset"] = uri.options.get("charset", "utf8")
 
-    def connect(self):
+    def raw_connect(self):
         raw_connection = MySQLdb.connect(**self._connect_kwargs)
-        return self.connection_factory(self, raw_connection)
+
+        # Here is another sad story about bad transactional behavior.  MySQL
+        # offers a feature to automatically reconnect dropped connections.
+        # What sounds like a dream, is actually a nightmare for anyone who
+        # is dealing with transactions.  When a reconnection happens, the
+        # currently running transaction is transparently rolled back, and
+        # everything that was being done is lost, without notice.  Not only
+        # that, but the connection may be put back in AUTOCOMMIT mode, even
+        # when that's not the default MySQLdb behavior.  The MySQL developers
+        # quickly understood that this is a terrible idea, and removed the
+        # behavior in MySQL 5.0.3.  Unfortunately, Debian and Ubuntu still
+        # have a patch for the MySQLdb module which *reenables* that
+        # behavior by default even past version 5.0.3 of MySQL.
+        #
+        # Some links:
+        #   http://dev.mysql.com/doc/refman/5.0/en/auto-reconnect.html
+        #   http://dev.mysql.com/doc/refman/5.0/en/mysql-reconnect.html
+        #   http://dev.mysql.com/doc/refman/5.0/en/gone-away.html
+        #
+        # What we do here is to explore something that is a very weird
+        # side-effect, discovered by reading the code.  When we call the
+        # ping() with a False argument, the automatic reconnection is
+        # disabled in a *permanent* way for this connection.  The argument
+        # to ping() is new in 1.2.2, though.
+        if MySQLdb.version_info >= (1, 2, 2):
+            raw_connection.ping(False)
+
+        return raw_connection
 
 
 create_from_uri = MySQL
@@ -133,3 +196,31 @@ def _convert_time(time_str):
         s = int(f)
         return time(int(h), int(m), s, (f-s)*1000000)
     return time(int(h), int(m), int(s), 0)
+
+
+# --------------------------------------------------------------------
+# Reserved words, MySQL specific
+
+# The list of reserved words here are MySQL specific.  SQL92 reserved words
+# are registered in storm.expr, near the "Reserved words, from SQL1992"
+# comment.  The reserved words here were taken from:
+#
+# http://dev.mysql.com/doc/refman/5.4/en/reserved-words.html
+compile.add_reserved_words("""
+    accessible analyze asensitive before bigint binary blob call change
+    condition current_user database databases day_hour day_microsecond
+    day_minute day_second delayed deterministic distinctrow div dual each
+    elseif enclosed escaped exit explain float4 float8 force fulltext
+    high_priority hour_microsecond hour_minute hour_second if ignore index
+    infile inout int1 int2 int3 int4 int8 iterate keys kill leave limit linear
+    lines load localtime localtimestamp lock long longblob longtext loop
+    low_priority master_ssl_verify_server_cert mediumblob mediumint mediumtext
+    middleint minute_microsecond minute_second mod modifies no_write_to_binlog
+    optimize optionally out outfile purge range read_write reads regexp
+    release rename repeat replace require return rlike schemas
+    second_microsecond sensitive separator show spatial specific
+    sql_big_result sql_calc_found_rows sql_small_result sqlexception
+    sqlwarning ssl starting straight_join terminated tinyblob tinyint tinytext
+    trigger undo unlock unsigned use utc_date utc_time utc_timestamp varbinary
+    varcharacter while xor year_month zerofill
+    """.split())

@@ -24,22 +24,26 @@
 This module contains the highest-level ORM interface in Storm.
 """
 
-
+from copy import copy
 from weakref import WeakValueDictionary
+from operator import itemgetter
 
 from storm.info import get_cls_info, get_obj_info, set_obj_info
 from storm.variables import Variable, LazyValue
 from storm.expr import (
     Expr, Select, Insert, Update, Delete, Column, Count, Max, Min,
     Avg, Sum, Eq, And, Asc, Desc, compile_python, compare_columns, SQLRaw,
-    Union, Except, Intersect, Alias)
+    Union, Except, Intersect, Alias, SetExpr)
 from storm.exceptions import (
     WrongStoreError, NotFlushedError, OrderLoopError, UnorderedError,
     NotOneError, FeatureError, CompileError, LostObjectError, ClassInfoError)
 from storm import Undef
+from storm.cache import Cache
+from storm.event import EventSystem
 
 
 __all__ = ["Store", "AutoReload", "EmptyResultSet"]
+
 
 PENDING_ADD = 1
 PENDING_REMOVE = 2
@@ -59,14 +63,27 @@ class Store(object):
 
     _result_set_factory = None
 
-    def __init__(self, database):
+    def __init__(self, database, cache=None):
         """
         @param database: The L{storm.database.Database} instance to use.
+        @param cache: The cache to use.  Defaults to a L{Cache} instance.
         """
-        self._connection = database.connect()
-        self._cache = WeakValueDictionary()
+        self._database = database
+        self._event = EventSystem(self)
+        self._connection = database.connect(self._event)
+        self._alive = WeakValueDictionary()
         self._dirty = {}
         self._order = {} # (info, info) = count
+        if cache is None:
+            self._cache = Cache()
+        else:
+            self._cache = cache
+        self._implicit_flush_block_count = 0
+        self._sequence = 0 # Advisory ordering.
+
+    def get_database(self):
+        """Return this Store's Database object."""
+        return self._database
 
     @staticmethod
     def of(obj):
@@ -86,12 +103,29 @@ class Store(object):
         This is just like L{storm.database.Database.execute}, except
         that a flush is performed first.
         """
-        self.flush()
+        if self._implicit_flush_block_count == 0:
+            self.flush()
         return self._connection.execute(statement, params, noresult)
 
     def close(self):
         """Close the connection."""
         self._connection.close()
+
+    def begin(self, xid):
+        """Start a new two-phase transaction.
+
+        @param xid: A L{Xid} instance holding identification data for the
+            new transaction.
+        """
+        self._connection.begin(xid)
+
+    def prepare(self):
+        """Prepare a two-phase transaction for the final commit.
+
+        @note: It must be call inside a two-phase transaction started
+            with begin().
+        """
+        self._connection.prepare()
 
     def commit(self):
         """Commit all changes to the database.
@@ -122,13 +156,17 @@ class Store(object):
     def get(self, cls, key):
         """Get object of type cls with the given primary key from the database.
 
-        If the object is cached the database won't be touched.
+        If the object is alive the database won't be touched.
 
         @param cls: Class of the object to be retrieved.
         @param key: Primary key of object. May be a tuple for composed keys.
+
+        @return: The object found with the given primary key, or None
+            if no object is found.
         """
 
-        self.flush()
+        if self._implicit_flush_block_count == 0:
+            self.flush()
 
         if type(key) != tuple:
             key = (key,)
@@ -143,13 +181,9 @@ class Store(object):
                 variable = column.variable_factory(value=variable)
             primary_vars.append(variable)
 
-        obj_info = self._cache.get((cls_info.cls, tuple(primary_vars)))
-        if obj_info is not None:
-            if obj_info.get("invalidated"):
-                try:
-                    self._fill_missing_values(obj_info, primary_vars)
-                except LostObjectError:
-                    return None
+        primary_values = tuple(var.get(to_db=True) for var in primary_vars)
+        obj_info = self._alive.get((cls_info.cls, primary_values))
+        if obj_info is not None and not obj_info.get("invalidated"):
             return self._get_object(obj_info)
 
         where = compare_columns(cls_info.primary_key, primary_vars)
@@ -183,14 +217,11 @@ class Store(object):
         @return: A L{ResultSet} of instances C{cls_spec}. If C{cls_spec}
             was a tuple, then an iterator of tuples of such instances.
         """
-        self.flush()
-        if type(cls_spec) is tuple:
-            cls_spec_info = tuple(get_cls_info(cls) for cls in cls_spec)
-            where = get_where_for_args(args, kwargs)
-        else:
-            cls_spec_info = get_cls_info(cls_spec)
-            where = get_where_for_args(args, kwargs, cls_spec)
-        return self._result_set_factory(self, cls_spec_info, where)
+        if self._implicit_flush_block_count == 0:
+            self.flush()
+        find_spec = FindSpec(cls_spec)
+        where = get_where_for_args(args, kwargs, find_spec.default_cls)
+        return self._result_set_factory(self, find_spec, where)
 
     def using(self, *tables):
         """Specify tables to use explicitly.
@@ -225,6 +256,7 @@ class Store(object):
 
         The C{added} event will be fired on the object info's event system.
         """
+        self._event.emit("register-transaction")
         obj_info = get_obj_info(obj)
 
         store = obj_info.get("store")
@@ -253,6 +285,7 @@ class Store(object):
 
         The associated row will be deleted from the database.
         """
+        self._event.emit("register-transaction")
         obj_info = get_obj_info(obj)
 
         if obj_info.get("store") is not self:
@@ -267,10 +300,12 @@ class Store(object):
             del obj_info["pending"]
             self._set_clean(obj_info)
             self._disable_lazy_resolving(obj_info)
+            obj_info.event.emit("removed")
         else:
             obj_info["pending"] = PENDING_REMOVE
             self._set_dirty(obj_info)
             self._disable_lazy_resolving(obj_info)
+            obj_info.event.emit("removed")
 
     def reload(self, obj):
         """Reload the given object.
@@ -290,8 +325,8 @@ class Store(object):
                         default_tables=cls_info.table, limit=1)
         result = self._connection.execute(select)
         values = result.get_one()
-        self._set_values(obj_info, cls_info.columns, result, values)
-        obj_info.checkpoint()
+        self._set_values(obj_info, cls_info.columns, result, values,
+                         replace_unknown_lazy=True)
         self._set_clean(obj_info)
 
     def autoreload(self, obj=None):
@@ -321,11 +356,37 @@ class Store(object):
         automatically invalidates all cached objects on transaction
         boundaries.
         """
+        if obj is None:
+            self._cache.clear()
+        else:
+            self._cache.remove(get_obj_info(obj))
         self._mark_autoreload(obj, True)
+
+    def reset(self):
+        """Reset this store, causing all future queries to return new objects.
+
+        Beware this method: it breaks the assumption that there will never be
+        two objects in memory which represent the same database object.
+
+        This is useful if you've got in-memory changes to an object that you
+        want to "throw out"; next time they're fetched the objects will be
+        recreated, so in-memory modifications will not be in effect for future
+        queries.
+        """
+        for obj_info in self._iter_alive():
+            if "store" in obj_info:
+                del obj_info["store"]
+        self._alive.clear()
+        self._dirty.clear()
+        self._cache.clear()
+        # The following line is untested, but then, I can't really find a way
+        # to test it without whitebox.
+        self._order.clear()
+
 
     def _mark_autoreload(self, obj=None, invalidate=False):
         if obj is None:
-            obj_infos = self._iter_cached()
+            obj_infos = self._iter_alive()
         else:
             obj_infos = (get_obj_info(obj),)
         for obj_info in obj_infos:
@@ -372,10 +433,7 @@ class Store(object):
             call to L{add_flush_order}.
         """
         pair = (get_obj_info(before), get_obj_info(after))
-        try:
-            self._order[pair] -= 1
-        except KeyError:
-            pass
+        self._order[pair] -= 1
 
     def flush(self):
         """Flush all dirty objects in cache to database.
@@ -396,8 +454,7 @@ class Store(object):
         normal flushing times are insufficient, such as when you want to
         make sure a database trigger gets run at a particular time.
         """
-        for obj_info in self._iter_cached():
-            obj_info.event.emit("flush")
+        self._event.emit("flush")
 
         # The _dirty list may change under us while we're running
         # the flush hooks, so we cannot just simply loop over it
@@ -420,19 +477,33 @@ class Store(object):
                 else:
                     before_set.add(before_info)
 
+        key_func = itemgetter("sequence")
+
+        # The external loop is important because items can get into the dirty
+        # state while we're flushing objects, ...
         while self._dirty:
-            for obj_info in self._dirty:
-                for before_info in predecessors.get(obj_info, ()):
-                    if before_info in self._dirty:
-                        break # A predecessor is still dirty.
+            # ... but we don't have to resort everytime an object is flushed,
+            # so we have an internal loop too.  If no objects become dirty
+            # during flush, this will clean self._dirty and the external loop
+            # will exit too.
+            sorted_dirty = sorted(self._dirty, key=key_func)
+            while sorted_dirty:
+                for i, obj_info in enumerate(sorted_dirty):
+                    for before_info in predecessors.get(obj_info, ()):
+                        if before_info in self._dirty:
+                            break # A predecessor is still dirty.
+                    else:
+                        break # Found an item without dirty predecessors.
                 else:
-                    break # Found an item without dirty predecessors.
-            else:
-                raise OrderLoopError("Can't flush due to ordering loop")
-            self._dirty.pop(obj_info, None)
-            self._flush_one(obj_info)
+                    raise OrderLoopError("Can't flush due to ordering loop")
+                del sorted_dirty[i]
+                self._dirty.pop(obj_info, None)
+                self._flush_one(obj_info)
 
         self._order.clear()
+
+        # That's not stricly necessary, but prevents getting into bigints.
+        self._sequence = 0
 
     def _flush_one(self, obj_info):
         cls_info = obj_info.cls_info
@@ -449,7 +520,7 @@ class Store(object):
             obj_info.pop("invalidated", None)
 
             self._disable_change_notification(obj_info)
-            self._remove_from_cache(obj_info)
+            self._remove_from_alive(obj_info)
             del obj_info["store"]
 
         elif pending is PENDING_ADD:
@@ -470,18 +541,12 @@ class Store(object):
             # the object.
             obj_info.pop("invalidated", None)
 
-            self._fill_missing_values(obj_info, obj_info.primary_vars, result,
-                                      checkpoint=False, replace_lazy=True)
+            self._fill_missing_values(obj_info, obj_info.primary_vars, result)
 
             self._enable_change_notification(obj_info)
-            self._add_to_cache(obj_info)
-
-            obj_info.checkpoint()
-
+            self._add_to_alive(obj_info)
         else:
-
             cached_primary_vars = obj_info["primary_vars"]
-            primary_key_idx = cls_info.primary_key_idx
 
             changes = self._get_changes_map(obj_info)
 
@@ -492,17 +557,30 @@ class Store(object):
                               cls_info.table)
                 self._connection.execute(expr, noresult=True)
 
-                self._fill_missing_values(obj_info, obj_info.primary_vars,
-                                          checkpoint=False, replace_lazy=True)
+                self._fill_missing_values(obj_info, obj_info.primary_vars)
 
-                self._add_to_cache(obj_info)
-
-
-            obj_info.checkpoint()
+                self._add_to_alive(obj_info)
 
         self._run_hook(obj_info, "__storm_flushed__")
 
         obj_info.event.emit("flushed")
+
+    def block_implicit_flushes(self):
+        """Block implicit flushes from operations like execute()."""
+        self._implicit_flush_block_count += 1
+
+    def unblock_implicit_flushes(self):
+        """Unblock implicit flushes from operations like execute()."""
+        assert self._implicit_flush_block_count > 0
+        self._implicit_flush_block_count -= 1
+
+    def block_access(self):
+        """Block access to the underlying database connection."""
+        self._connection.block_access()
+
+    def unblock_access(self):
+        """Unblock access to the underlying database connection."""
+        self._connection.unblock_access()
 
     def _get_changes_map(self, obj_info, adding=False):
         """Return a {column: variable} dictionary suitable for inserts/updates.
@@ -540,12 +618,12 @@ class Store(object):
 
         return changes
 
-    def _fill_missing_values(self, obj_info, primary_vars, result=None,
-                             checkpoint=True, replace_lazy=False):
-        """Query retrieve from the database any missing values in obj_info.
+    def _fill_missing_values(self, obj_info, primary_vars, result=None):
+        """Fill missing values in variables of the given obj_info.
 
         This method will verify which values are unset in obj_info,
-        and will retrieve them from the database to set them.
+        and set them to AutoReload, or if it's part of the primary
+        key, query the database for the actual values.
 
         @param obj_info: ObjectInfo to have its values filled.
         @param primary_vars: Variables composing the primary key with
@@ -555,86 +633,47 @@ class Store(object):
             isn't defined, it must be retrieved from the database
             using database-dependent logic, which is provided by the
             backend in the result of the query which inserted the object.
-        @param checkpoint: If true, variables will be checkpointed so that
-            they are aware that the value just set is the value currently
-            in the database.  Generally this will be false only when
-            checkpointing is being done at the calling place.
-        @param replace_lazy: If true, lazy values are handled as if they
-            were missing, and are replaced by values returned from the
-            database.
         """
         cls_info = obj_info.cls_info
 
         cached_primary_vars = obj_info.get("primary_vars")
         primary_key_idx = cls_info.primary_key_idx
-
         missing_columns = []
         for column in cls_info.columns:
             variable = obj_info.variables[column]
             if not variable.is_defined():
                 idx = primary_key_idx.get(id(column))
-                lazy_value = variable.get_lazy()
-                if (idx is not None and cached_primary_vars is not None
-                    and lazy_value is AutoReload):
-                    # For auto-reloading a primary key, just get the
-                    # value out of the cache.
-                    variable.set(cached_primary_vars[idx].get())
-                elif (replace_lazy or lazy_value is None or
-                      lazy_value is AutoReload):
-                    missing_columns.append(column)
+                if idx is not None:
+                    if (cached_primary_vars is not None
+                        and variable.get_lazy() is AutoReload):
+                        # For auto-reloading a primary key, just
+                        # get the value out of the cache.
+                        variable.set(cached_primary_vars[idx].get())
+                    else:
+                        missing_columns.append(column)
+                else:
+                    # Any lazy values are overwritten here.  This value
+                    # must have just been sent to the database, so this
+                    # was already set there.
+                    variable.set(AutoReload)
+            else:
+                variable.checkpoint()
 
         if missing_columns:
-            primary_key = cls_info.primary_key
-
-            for variable in primary_vars:
-                if not variable.is_defined():
-                    # XXX Think about the case where the primary key is set
-                    #     to a lazy value which isn't AutoReload.
-                    if result is None:
-                        raise RuntimeError("Can't find missing primary values "
-                                           "without a meaningful result")
-                    where = result.get_insert_identity(primary_key,
-                                                       primary_vars)
-                    break
-            else:
-                where = compare_columns(primary_key, primary_vars)
-
-            # This procedure will also validate the cache.
+            where = result.get_insert_identity(cls_info.primary_key,
+                                               primary_vars)
             result = self._connection.execute(Select(missing_columns, where))
             self._set_values(obj_info, missing_columns,
                              result, result.get_one())
 
-            obj_info.pop("invalidated", None)
-
-            if checkpoint:
-                for column in missing_columns:
-                    obj_info.variables[column].checkpoint()
-
-        elif obj_info.get("invalidated"):
-            # In case of no explicit missing values, enforce cache validation.
-            # It might happen that the primary key was autoreloaded and
-            # restored from the cache.
-            where = compare_columns(cls_info.primary_key, primary_vars)
-            result = self._connection.execute(Select(SQLRaw("1"), where))
-            if not result.get_one():
-                raise LostObjectError("Object is not in the database anymore")
-
-            obj_info.pop("invalidated", None)
-
-
-    def _load_objects(self, cls_spec_info, result, values):
-        if type(cls_spec_info) is not tuple:
-            return self._load_object(cls_spec_info, result, values)
-        else:
-            objects = []
-            values_start = values_end = 0
-            for cls_info in cls_spec_info:
-                values_end += len(cls_info.columns)
-                obj = self._load_object(cls_info, result,
-                                        values[values_start:values_end])
-                objects.append(obj)
-                values_start = values_end
-            return tuple(objects)
+    def _validate_alive(self, obj_info):
+        """Perform cache validation for the given obj_info."""
+        where = compare_columns(obj_info.cls_info.primary_key,
+                                obj_info["primary_vars"])
+        result = self._connection.execute(Select(SQLRaw("1"), where))
+        if not result.get_one():
+            raise LostObjectError("Object is not in the database anymore")
+        obj_info.pop("invalidated", None)
 
     def _load_object(self, cls_info, result, values):
         # _set_values() need the cls_info columns for the class of the
@@ -645,27 +684,34 @@ class Store(object):
         # Prepare cache key.
         primary_vars = []
         columns = cls_info.columns
-        is_null = True
+
+        for value in values:
+            if value is not None:
+                break
+        else:
+            # We've got a row full of NULLs, so consider that the object
+            # wasn't found.  This is useful for joins, where non-existent
+            # rows are represented like that.
+            return None
+
         for i in cls_info.primary_key_pos:
             value = values[i]
-            if value is not None:
-                is_null = False
             variable = columns[i].variable_factory(value=value, from_db=True)
             primary_vars.append(variable)
 
-        if is_null:
-            # We've got a row full of NULLs, so consider that the object
-            # wasn't found.  This is useful for joins, where unexistent
-            # rows are reprsented like that.
-            return None
-
         # Lookup cache.
-        obj_info = self._cache.get((cls, tuple(primary_vars)))
+        primary_values = tuple(var.get(to_db=True) for var in primary_vars)
+        obj_info = self._alive.get((cls, primary_values))
 
         if obj_info is not None:
             # Found object in cache, and it must be valid since the
             # primary key was extracted from result values.
             obj_info.pop("invalidated", None)
+
+            # Take that chance and fill up any undefined variables
+            # with fresh data, since we got it anyway.
+            self._set_values(obj_info, cls_info.columns, result,
+                             values, keep_defined=True)
 
             # We're not sure if the obj is still in memory at this
             # point.  This will rebuild it if needed.
@@ -677,11 +723,10 @@ class Store(object):
             obj_info = get_obj_info(obj)
             obj_info["store"] = self
 
-            self._set_values(obj_info, cls_info.columns, result, values)
+            self._set_values(obj_info, cls_info.columns, result, values,
+                             replace_unknown_lazy=True)
 
-            obj_info.checkpoint()
-
-            self._add_to_cache(obj_info)
+            self._add_to_alive(obj_info)
             self._enable_change_notification(obj_info)
             self._enable_lazy_resolving(obj_info)
 
@@ -697,7 +742,12 @@ class Store(object):
             obj = cls.__new__(cls)
             obj_info.set_obj(obj)
             set_obj_info(obj, obj_info)
+            # Re-enable change notification, as it may have been implicitely
+            # disabled when the previous object has been collected
+            self._enable_change_notification(obj_info)
             self._run_hook(obj_info, "__storm_loaded__")
+        # Renew the cache.
+        self._cache.add(obj_info)
         return obj
 
     @staticmethod
@@ -706,22 +756,44 @@ class Store(object):
         if func is not None:
             func()
 
-    def _set_values(self, obj_info, columns, result, values):
+    def _set_values(self, obj_info, columns, result, values,
+                    keep_defined=False, replace_unknown_lazy=False):
         if values is None:
             raise LostObjectError("Can't obtain values from the database "
                                   "(object got removed?)")
+        obj_info.pop("invalidated", None)
         for column, value in zip(columns, values):
+            variable = obj_info.variables[column]
+            lazy_value = variable.get_lazy()
+            is_unknown_lazy = not (lazy_value is None or
+                                   lazy_value is AutoReload)
+            if keep_defined:
+                if variable.is_defined() or is_unknown_lazy:
+                    continue
+            elif is_unknown_lazy and not replace_unknown_lazy:
+                # This should *never* happen, because whenever we get
+                # to this point it should be after a flush() which
+                # updated the database with lazy values and then replaced
+                # them by AutoReload.  Letting this go through means
+                # we're blindly discarding an unknown lazy value and
+                # replacing it by the value from the database.
+                raise RuntimeError("Unexpected situation. "
+                                   "Please contact the developers.")
             if value is None:
-                obj_info.variables[column].set(value, from_db=True)
+                variable.set(value, from_db=True)
             else:
-                result.set_variable(obj_info.variables[column], value)
+                result.set_variable(variable, value)
+
+            variable.checkpoint()
 
 
     def _is_dirty(self, obj_info):
         return obj_info in self._dirty
 
     def _set_dirty(self, obj_info):
-        self._dirty[obj_info] = obj_info.get_obj()
+        if obj_info not in self._dirty:
+            self._dirty[obj_info] = obj_info.get_obj()
+            obj_info["sequence"] = self._sequence = self._sequence + 1
 
     def _set_clean(self, obj_info):
         self._dirty.pop(obj_info, None)
@@ -730,28 +802,38 @@ class Store(object):
         return self._dirty
 
 
-    def _add_to_cache(self, obj_info):
-        """Add an object to the cache, keyed on primary key variables.
+    def _add_to_alive(self, obj_info):
+        """Add an object to the set of known in-memory objects.
 
-        When an object is added to the cache, the key is built from
-        a copy of the current variables that are part of the primary
-        key.  This means that, when an object is retrieved from the
-        database, these values may be used to get the cached object
-        which is already in memory, even if it requested the primary
-        key value to be changed.  For that reason, when changes to
-        the primary key are flushed, the cache key should also be
-        updated to reflect these changes.
+        When an object is added to the set of known in-memory objects,
+        the key is built from a copy of the current variables that are
+        part of the primary key.  This means that, when an object is
+        retrieved from the database, these values may be used to get
+        the cached object which is already in memory, even if it
+        requested the primary key value to be changed.  For that reason,
+        when changes to the primary key are flushed, the alive object
+        key should also be updated to reflect these changes.
+
+        In addition to tracking objects alive in memory, we have a strong
+        reference cache which keeps a fixed number of last-used objects
+        in-memory, to prevent further database access for recently fetched
+        objects.
         """
         cls_info = obj_info.cls_info
         old_primary_vars = obj_info.get("primary_vars")
         if old_primary_vars is not None:
-            self._cache.pop((cls_info.cls, old_primary_vars), None)
+            old_primary_values = tuple(
+                var.get(to_db=True) for var in old_primary_vars)
+            self._alive.pop((cls_info.cls, old_primary_values), None)
         new_primary_vars = tuple(variable.copy()
                                  for variable in obj_info.primary_vars)
-        self._cache[cls_info.cls, new_primary_vars] = obj_info
+        new_primary_values = tuple(
+            var.get(to_db=True) for var in new_primary_vars)
+        self._alive[cls_info.cls, new_primary_values] = obj_info
         obj_info["primary_vars"] = new_primary_vars
+        self._cache.add(obj_info)
 
-    def _remove_from_cache(self, obj_info):
+    def _remove_from_alive(self, obj_info):
         """Remove an object from the cache.
 
         This method is only called for objects that were explicitly
@@ -760,18 +842,21 @@ class Store(object):
         """
         primary_vars = obj_info.get("primary_vars")
         if primary_vars is not None:
-            del self._cache[obj_info.cls_info.cls, primary_vars]
+            self._cache.remove(obj_info)
+            primary_values = tuple(var.get(to_db=True) for var in primary_vars)
+            del self._alive[obj_info.cls_info.cls, primary_values]
             del obj_info["primary_vars"]
 
-    def _iter_cached(self):
-        return self._cache.values()
-
+    def _iter_alive(self):
+        return self._alive.values()
 
     def _enable_change_notification(self, obj_info):
+        obj_info.event.emit("start-tracking-changes", self._event)
         obj_info.event.hook("changed", self._variable_changed)
 
     def _disable_change_notification(self, obj_info):
         obj_info.event.unhook("changed", self._variable_changed)
+        obj_info.event.emit("stop-tracking-changes", self._event)
 
     def _variable_changed(self, obj_info, variable,
                           old_value, new_value, fromdb):
@@ -781,11 +866,10 @@ class Store(object):
         if not fromdb:
             if new_value is not Undef and new_value is not AutoReload:
                 if obj_info.get("invalidated"):
-                    # This might be a previously cached object being
+                    # This might be a previously alive object being
                     # updated.  Let's validate it now to improve debugging.
                     # This will raise LostObjectError if the object is gone.
-                    self._fill_missing_values(obj_info,
-                                              obj_info["primary_vars"])
+                    self._validate_alive(obj_info)
                 self._set_dirty(obj_info)
 
 
@@ -796,25 +880,36 @@ class Store(object):
         obj_info.event.unhook("resolve-lazy-value", self._resolve_lazy_value)
 
     def _resolve_lazy_value(self, obj_info, variable, lazy_value):
-        if lazy_value is AutoReload:
-            cached_primary_vars = obj_info.get("primary_vars")
-            if cached_primary_vars is None:
-                # XXX See the comment on self.flush() below.
-                self.flush()
-            else:
-                idx = obj_info.cls_info.primary_key_idx.get(id(variable.column))
-                if idx is not None:
-                    # No need to touch the database if auto-reloading
-                    # a primary key variable.
-                    variable.set(cached_primary_vars[idx].get())
-                else:
-                    self._fill_missing_values(obj_info, cached_primary_vars)
-        else:
-            # XXX This will do it for now, but it should really flush
-            #     just this single object and ones that it depends on.
-            #     _flush_one() doesn't consider dependencies, so it may
-            #     not be used directly.
+        """Resolve a variable set to a lazy value when it's touched.
+
+        This method is hooked into the obj_info to resolve variables
+        set to lazy values when they're accessed.  It will first flush
+        the store, and then set all variables set to AutoReload to
+        their database values.
+        """
+        if lazy_value is not AutoReload and not isinstance(lazy_value, Expr):
+            # It's not something we handle.
+            return
+
+        # XXX This will do it for now, but it should really flush
+        #     just this single object and ones that it depends on.
+        #     _flush_one() doesn't consider dependencies, so it may
+        #     not be used directly.  Maybe allow flush(obj)?
+        if self._implicit_flush_block_count == 0:
             self.flush()
+
+        autoreload_columns = []
+        for column in obj_info.cls_info.columns:
+            if obj_info.variables[column].get_lazy() is AutoReload:
+                autoreload_columns.append(column)
+
+        if autoreload_columns:
+            where = compare_columns(obj_info.cls_info.primary_key,
+                                    obj_info["primary_vars"])
+            result = self._connection.execute(
+                Select(autoreload_columns, where))
+            self._set_values(obj_info, autoreload_columns,
+                             result, result.get_one())
 
 
 class ResultSet(object):
@@ -827,30 +922,38 @@ class ResultSet(object):
     Generally these should not be constructed directly, but instead
     retrieved from calls to L{Store.find}.
     """
-    def __init__(self, store, cls_spec_info,
+
+    def __init__(self, store, find_spec,
                  where=Undef, tables=Undef, select=Undef):
         self._store = store
-        self._cls_spec_info = cls_spec_info
+        self._find_spec = find_spec
         self._where = where
         self._tables = tables
         self._select = select
-        self._order_by = getattr(cls_spec_info, "default_order", Undef)
+        self._order_by = find_spec.default_order
         self._offset = Undef
         self._limit = Undef
         self._distinct = False
+        self._group_by = Undef
+        self._having = Undef
 
     def copy(self):
         """Return a copy of this ResultSet object, with the same configuration.
         """
         result_set = object.__new__(self.__class__)
         result_set.__dict__.update(self.__dict__)
+        if self._select is not Undef:
+            # This expression must be copied because we may have to change it
+            # in-place inside _get_select().
+            result_set._select = copy(self._select)
         return result_set
 
     def config(self, distinct=None, offset=None, limit=None):
         """Configure this result object in-place. All parameters are optional.
 
-        @param distinct: Boolean enabling/disabling usage of the DISTINCT
-            keyword in the query made.
+        @param distinct: If True, enables usage of the DISTINCT keyword in
+            the query. If a tuple or list of columns, inserts a DISTINCT ON
+            (only supported by PostgreSQL).
         @param offset: Offset where results will start to be retrieved
             from the result set.
         @param limit: Limit the number of objects retrieved from the
@@ -876,21 +979,14 @@ class ResultSet(object):
             if self._offset is not Undef: # XXX UNTESTED!
                 self._select.offset = self._offset
             return self._select
-        if type(self._cls_spec_info) is tuple:
-            columns = []
-            default_tables = []
-            for cls_info in self._cls_spec_info:
-                columns.append(cls_info.columns)
-                default_tables.append(cls_info.table)
-        else:
-            columns = self._cls_spec_info.columns
-            default_tables = self._cls_spec_info.table
+        columns, default_tables = self._find_spec.get_columns_and_tables()
         return Select(columns, self._where, self._tables, default_tables,
                       self._order_by, offset=self._offset, limit=self._limit,
-                      distinct=self._distinct)
+                      distinct=self._distinct, group_by=self._group_by,
+                      having=self._having)
 
     def _load_objects(self, result, values):
-        return self._store._load_objects(self._cls_spec_info, result, values)
+        return self._find_spec.load_objects(self._store, result, values)
 
     def __iter__(self):
         """Iterate the results of the query.
@@ -902,8 +998,9 @@ class ResultSet(object):
     def __getitem__(self, index):
         """Get an individual item by offset, or a range of items by slice.
 
-        If a slice is used, a new L{ResultSet} will be return
-        appropriately modified with OFFSET and LIMIT clauses.
+        @return: The matching object or, if a slice is used, a new
+            L{ResultSet} will be returned appropriately modified with
+            C{OFFSET} and C{LIMIT} clauses.
         """
         if isinstance(index, (int, long)):
             if index == 0:
@@ -913,7 +1010,7 @@ class ResultSet(object):
                     index += self._offset
                 result_set = self.copy()
                 result_set.config(offset=index, limit=1)
-            obj = result_set.any()
+            obj = result_set._any()
             if obj is None:
                 raise IndexError("Index out of range")
             return obj
@@ -945,10 +1042,57 @@ class ResultSet(object):
 
         return self.copy().config(offset=offset, limit=limit)
 
+    def __contains__(self, item):
+        """Check if an item is contained within the result set."""
+        columns, values = self._find_spec.get_columns_and_values_for_item(item)
+
+        if self._select is Undef and self._group_by is Undef:
+            # No predefined select: adjust the where clause.
+            dummy, default_tables = self._find_spec.get_columns_and_tables()
+            where = [Eq(*pair) for pair in zip(columns, values)]
+            if self._where is not Undef:
+                where.append(self._where)
+            select = Select(1, And(*where), self._tables,
+                            default_tables)
+        else:
+            # Rewrite the predefined query and use it as a subquery.
+            aliased_columns = [Alias(column, "_key%d" % index)
+                               for (index, column) in enumerate(columns)]
+            subquery = replace_columns(self._get_select(), aliased_columns)
+            where = [Eq(*pair) for pair in zip(aliased_columns, values)]
+            select = Select(1, And(*where), Alias(subquery, "_tmp"))
+
+        result = self._store._connection.execute(select)
+        return result.get_one() is not None
+
+    def is_empty(self):
+        """Return C{True} if this result set doesn't contain any results."""
+        subselect = self._get_select()
+        subselect.limit = 1
+        subselect.order_by = Undef
+        select = Select(1, tables=Alias(subselect, "_tmp"), limit=1)
+        result = self._store._connection.execute(select)
+        return (not result.get_one())
+
     def any(self):
         """Return a single item from the result set.
 
-        See also one(), first(), and last().
+        @return: An arbitrary object or C{None} if one isn't available.
+        @seealso: one(), first(), and last().
+        """
+        select = self._get_select()
+        select.limit = 1
+        select.order_by = Undef
+        result = self._store._connection.execute(select)
+        values = result.get_one()
+        if values:
+            return self._load_objects(result, values)
+        return None
+
+    def _any(self):
+        """Return a single item from the result without changing sort order.
+
+        @return: An arbitrary object or C{None} if one isn't available.
         """
         select = self._get_select()
         select.limit = 1
@@ -961,20 +1105,21 @@ class ResultSet(object):
     def first(self):
         """Return the first item from an ordered result set.
 
-        Will raise UnorderedError if the result set isn't ordered.
-
-        See also last(), one(), and any().
+        @raises UnorderedError: Raised if the result set isn't ordered.
+        @return: The first object or C{None} if one isn't available.
+        @seealso: last(), one(), and any().
         """
         if self._order_by is Undef:
             raise UnorderedError("Can't use first() on unordered result set")
-        return self.any()
+        return self._any()
 
     def last(self):
         """Return the last item from an ordered result set.
 
-        Will raise UnorderedError if the result set isn't ordered.
-
-        See also first(), one(), and any().
+        @raises FeatureError: Raised if the result set has a C{LIMIT} set.
+        @raises UnorderedError: Raised if the result set isn't ordered.
+        @return: The last object or C{None} if one isn't available.
+        @seealso: first(), one(), and any().
         """
         if self._order_by is Undef:
             raise UnorderedError("Can't use last() on unordered result set")
@@ -1001,9 +1146,10 @@ class ResultSet(object):
     def one(self):
         """Return one item from a result set containing at most one item.
 
-        Will raise NotOneError if the result set contains more than one item.
-
-        See also first(), one(), and any().
+        @raises NotOneError: Raised if the result set contains more than one
+            item.
+        @return: The object or C{None} if one isn't available.
+        @seealso: first(), one(), and any().
         """
         select = self._get_select()
         # limit could be 1 due to slicing, for instance.
@@ -1038,58 +1184,124 @@ class ResultSet(object):
         This is done efficiently with a DELETE statement, so objects
         are not actually loaded into Python.
         """
+        if self._group_by is not Undef:
+            raise FeatureError("Removing isn't supported after a "
+                               " GROUP BY clause ")
         if self._offset is not Undef or self._limit is not Undef:
             raise FeatureError("Can't remove a sliced result set")
-        if type(self._cls_spec_info) is tuple:
-            raise FeatureError("Removing not yet supported with tuple finds")
+        if self._find_spec.default_cls_info is None:
+            raise FeatureError("Removing not yet supported for tuple or "
+                               "expression finds")
         if self._select is not Undef:
             raise FeatureError("Removing isn't supported with "
                                "set expressions (unions, etc)")
-        self._store._connection.execute(Delete(self._where,
-                                               self._cls_spec_info.table),
-                                        noresult=True)
+        result = self._store._connection.execute(
+            Delete(self._where, self._find_spec.default_cls_info.table))
+        return result.rowcount
 
-    def _aggregate(self, expr, column=None):
-        if type(self._cls_spec_info) is tuple:
-            default_tables = [cls_info.table
-                              for cls_info in self._cls_spec_info]
+    def group_by(self, *expr):
+        """Group this ResultSet by the given expressions.
+
+        @param expr: The expressions used in the GROUP BY statement.
+
+        @return: self (not a copy).
+        """
+        if self._select is not Undef:
+            raise FeatureError("Grouping isn't supported with "
+                               "set expressions (unions, etc)")
+
+        find_spec = FindSpec(expr)
+        columns, dummy = find_spec.get_columns_and_tables()
+
+        self._group_by = columns
+        return self
+
+    def having(self, *expr):
+        """Filter result previously grouped by.
+
+        @param expr: Instances of L{Expr}.
+
+        @return: self (not a copy).
+        """
+        if self._group_by is Undef:
+            raise FeatureError("having can only be called after group_by.")
+        self._having = And(*expr)
+        return self
+
+    def _aggregate(self, aggregate_func, expr, column=None):
+        if self._group_by is not Undef:
+            raise FeatureError("Single aggregates aren't supported after a "
+                               " GROUP BY clause ")
+        columns, default_tables = self._find_spec.get_columns_and_tables()
+        if (self._select is Undef and not self._distinct and
+            self._offset is Undef and self._limit is Undef):
+            select = Select(aggregate_func(expr), self._where,
+                            self._tables, default_tables)
         else:
-            default_tables = self._cls_spec_info.table
-        if self._select is Undef:
-            select = Select(expr, self._where, self._tables, default_tables)
-        else:
-            select = Select(expr, tables=Alias(self._select))
+            if expr is Undef:
+                aggregate = aggregate_func(expr)
+            else:
+                alias = Alias(expr, "_expr")
+                columns.append(alias)
+                aggregate = aggregate_func(alias)
+            # Ordering probably doesn't matter for any aggregates, and since
+            # replace_columns() blows up on an ordered query, we'll drop it.
+            select = self._get_select()
+            select.order_by = Undef
+            subquery = replace_columns(select, columns)
+            select = Select(aggregate, tables=Alias(subquery, "_tmp"))
         result = self._store._connection.execute(select)
         value = result.get_one()[0]
         variable_factory = getattr(column, "variable_factory", None)
         if variable_factory:
-            variable = variable_factory()
+            variable = variable_factory(allow_none=True)
             result.set_variable(variable, value)
             return variable.get()
         return value
 
     def count(self, expr=Undef, distinct=False):
         """Get the number of objects represented by this ResultSet."""
-        return int(self._aggregate(Count(expr, distinct)))
+        return int(self._aggregate(lambda expr: Count(expr, distinct), expr))
 
     def max(self, expr):
         """Get the highest value from an expression."""
-        return self._aggregate(Max(expr), expr)
+        return self._aggregate(Max, expr, expr)
 
     def min(self, expr):
         """Get the lowest value from an expression."""
-        return self._aggregate(Min(expr), expr)
+        return self._aggregate(Min, expr, expr)
 
     def avg(self, expr):
         """Get the average value from an expression."""
-        value = self._aggregate(Avg(expr))
+        value = self._aggregate(Avg, expr)
         if value is None:
             return value
         return float(value)
 
     def sum(self, expr):
         """Get the sum of all values in an expression."""
-        return self._aggregate(Sum(expr), expr)
+        return self._aggregate(Sum, expr, expr)
+
+    def get_select_expr(self, *columns):
+        """Get a L{Select} expression to retrieve only the specified columns.
+
+        @param columns: One or more L{storm.expr.Column} objects whose values
+            will be fetched.
+        @raises FeatureError: Raised if no columns are specified or if this
+            result is a set expression such as a union.
+        @return: A L{Select} expression configured to use the query parameters
+            specified for this result set, and also limited to only retrieving
+            data for the specified columns.
+        """
+        if not columns:
+            raise FeatureError("select() takes at least one column "
+                               "as argument")
+        if self._select is not Undef:
+            raise FeatureError(
+                "Can't generate subselect expression for set expressions")
+        select = self._get_select()
+        select.columns = columns
+        return select
 
     def values(self, *columns):
         """Retrieve only the specified columns.
@@ -1098,12 +1310,16 @@ class ResultSet(object):
 
         @param columns: One or more L{storm.expr.Column} objects whose
             values will be fetched.
+        @raises FeatureError: Raised if no columns are specified or if this
+            result is a set expression such as a union.
         @return: An iterator of tuples of the values for each column
             from each matching row in the database.
         """
         if not columns:
             raise FeatureError("values() takes at least one column "
                                "as argument")
+        if self._select is not Undef:
+            raise FeatureError("values() can't be used with set expressions")
         select = self._get_select()
         select.columns = columns
         result = self._store._connection.execute(select)
@@ -1130,9 +1346,13 @@ class ResultSet(object):
         For instance, C{result.set(Class.attr1 == 1, attr2=2)} will set
         C{attr1} to 1 and C{attr2} to 2, on all matching objects.
         """
+        if self._group_by is not Undef:
+            raise FeatureError("Setting isn't supported after a "
+                               " GROUP BY clause ")
 
-        if type(self._cls_spec_info) is tuple:
-            raise FeatureError("Setting isn't supported with tuple finds")
+        if self._find_spec.default_cls_info is None:
+            raise FeatureError("Setting isn't supported with tuple or "
+                               "expression finds")
         if self._select is not Undef:
             raise FeatureError("Setting isn't supported with "
                                "set expressions (unions, etc)")
@@ -1141,15 +1361,19 @@ class ResultSet(object):
             return
 
         changes = {}
-        cls = self._cls_spec_info.cls
+        cls = self._find_spec.default_cls_info.cls
 
         # For now only "Class.attr == var" is supported in args.
         for expr in args:
-            if (not isinstance(expr, Eq) or
-                not isinstance(expr.expr1, Column) or
-                not isinstance(expr.expr2, (Column, Variable))):
+            if not isinstance(expr, Eq):
                 raise FeatureError("Unsupported set expression: %r" %
                                    repr(expr))
+            elif not isinstance(expr.expr1, Column):
+                raise FeatureError("Unsupported left operand in set "
+                                   "expression: %r" % repr(expr.expr1))
+            elif not isinstance(expr.expr2, (Expr, Variable)):
+                raise FeatureError("Unsupported right operand in set "
+                                   "expression: %r" % repr(expr.expr2))
             changes[expr.expr1] = expr.expr2
 
         for key, value in kwargs.items():
@@ -1157,22 +1381,25 @@ class ResultSet(object):
             if value is None:
                 changes[column] = None
             elif isinstance(value, Expr):
-                if not isinstance(value, Column):
-                    raise FeatureError("Unsupported set expression: %r" %
-                                       repr(value))
                 changes[column] = value
             else:
                 changes[column] = column.variable_factory(value=value)
 
-        expr = Update(changes, self._where, self._cls_spec_info.table)
+        expr = Update(changes, self._where,
+                      self._find_spec.default_cls_info.table)
         self._store.execute(expr, noresult=True)
 
         try:
             cached = self.cached()
         except CompileError:
-            for obj_info in self._store._iter_cached():
-                for column in changes:
-                    obj_info.variables[column].set(AutoReload)
+            # We are iterating through all objects in memory here, so
+            # check if the object type matches to avoid trying to
+            # invalidate a column that does not exist, on an unrelated
+            # object.
+            for obj_info in self._store._iter_alive():
+                if obj_info.cls_info is self._find_spec.default_cls_info:
+                    for column in changes:
+                        obj_info.variables[column].set(AutoReload)
         else:
             changes = changes.items()
             for obj in cached:
@@ -1182,6 +1409,12 @@ class ResultSet(object):
                         pass
                     elif isinstance(value, Variable):
                         value = value.get()
+                    elif isinstance(value, Expr):
+                        # If the value is an Expression that means we
+                        # can't compute it by ourselves: we rely on
+                        # the database to compute it, so just set the
+                        # value to AutoReload.
+                        value = AutoReload
                     else:
                         value = variables[value].get()
                     variables[column].set(value)
@@ -1189,23 +1422,23 @@ class ResultSet(object):
 
     def cached(self):
         """Return matching objects from the cache for the current query."""
-        if type(self._cls_spec_info) is tuple:
-            raise FeatureError("Cached finds not supported with tuples")
+        if self._find_spec.default_cls_info is None:
+            raise FeatureError("Cache finds not supported with tuples "
+                               "or expressions")
         if self._tables is not Undef:
-            raise FeatureError("Cached finds not supported with custom tables")
+            raise FeatureError("Cache finds not supported with custom tables")
         if self._where is Undef:
             match = None
         else:
             match = compile_python.get_matcher(self._where)
-            name_to_column = dict((column.name, column)
-                                  for column in self._cls_spec_info.columns)
-            def get_column(name, name_to_column=name_to_column):
-                return obj_info.variables[name_to_column[name]].get()
+
+            def get_column(column):
+                return obj_info.variables[column].get()
+
         objects = []
-        cls = self._cls_spec_info.cls
-        for obj_info in self._store._iter_cached():
+        for obj_info in self._store._iter_alive():
             try:
-                if (obj_info.cls_info is self._cls_spec_info and
+                if (obj_info.cls_info is self._find_spec.default_cls_info and
                     (match is None or match(get_column))):
                     objects.append(self._store._get_object(obj_info))
             except LostObjectError:
@@ -1213,12 +1446,43 @@ class ResultSet(object):
                      # in get_column().
         return objects
 
+    def find(self, *args, **kwargs):
+        """Perform a query on objects within this result set.
+
+        This is analogous to L{Store.find}, although it doesn't take a
+        C{cls_spec} argument, instead using the same tables as the
+        existing result set, and restricts the results to those in
+        this set.
+
+        @param args: Instances of L{Expr}.
+        @param kwargs: Mapping of simple column names to values or
+            expressions to query for.
+
+        @return: A L{ResultSet} of matching instances.
+        """
+        if self._select is not Undef:
+            raise FeatureError("Can't query set expressions")
+        if self._offset is not Undef or self._limit is not Undef:
+            raise FeatureError("Can't query a sliced result set")
+        if self._group_by is not Undef:
+            raise FeatureError("Can't query grouped result sets")
+
+        result_set = self.copy()
+        extra_where = get_where_for_args(
+            args, kwargs, self._find_spec.default_cls)
+        if extra_where is not Undef:
+            if result_set._where is Undef:
+                result_set._where = extra_where
+            else:
+                result_set._where = And(result_set._where, extra_where)
+        return result_set
+
     def _set_expr(self, expr_cls, other, all=False):
-        if self._cls_spec_info != other._cls_spec_info:
+        if not self._find_spec.is_compatible(other._find_spec):
             raise FeatureError("Incompatible results for set operation")
 
         expr = expr_cls(self._get_select(), other._get_select(), all=all)
-        return ResultSet(self._store, self._cls_spec_info, select=expr)
+        return ResultSet(self._store, self._find_spec, select=expr)
 
     def union(self, other, all=False):
         """Get the L{Union} of this result set and another.
@@ -1268,9 +1532,6 @@ class EmptyResultSet(object):
     def __init__(self, ordered=False):
         self._order_by = ordered
 
-    def _get_select(self):
-        return Select(SQLRaw("1"), SQLRaw("1 = 2"))
-
     def copy(self):
         result = EmptyResultSet(self._order_by)
         return result
@@ -1284,6 +1545,12 @@ class EmptyResultSet(object):
 
     def __getitem__(self, index):
         return self.copy()
+
+    def __contains__(self, item):
+        return False
+
+    def is_empty(self):
+        return True
 
     def any(self):
         return None
@@ -1305,10 +1572,13 @@ class EmptyResultSet(object):
         self._order_by = True
         return self
 
-    def remove(self):
-        pass
+    def group_by(self, *expr):
+        return self
 
-    def count(self, column=Undef, distinct=False):
+    def remove(self):
+        return 0
+
+    def count(self, expr=Undef, distinct=False):
         return 0
 
     def max(self, column):
@@ -1323,6 +1593,21 @@ class EmptyResultSet(object):
     def sum(self, column):
         return None
 
+    def get_select_expr(self, *columns):
+        """Get a L{Select} expression to retrieve only the specified columns.
+
+        @param columns: One or more L{storm.expr.Column} objects whose values
+            will be fetched.
+        @raises FeatureError: Raised if no columns are specified.
+        @return: A L{Select} expression configured to use the query parameters
+            specified for this result set.  The result of the select will
+            always be an empty set of rows.
+        """
+        if not columns:
+            raise FeatureError("select() takes at least one column "
+                               "as argument")
+        return Select(columns, False)
+
     def values(self, *columns):
         if not columns:
             raise FeatureError("values() takes at least one column "
@@ -1335,6 +1620,9 @@ class EmptyResultSet(object):
 
     def cached(self):
         return []
+
+    def find(self, *args, **kwargs):
+        return self
 
     def union(self, other):
         if isinstance(other, EmptyResultSet):
@@ -1366,19 +1654,118 @@ class TableSet(object):
 
         @return: A L{ResultSet}.
         """
-        self._store.flush()
-        if type(cls_spec) is tuple:
-            cls_spec_info = tuple(get_cls_info(cls) for cls in cls_spec)
-            where = get_where_for_args(args, kwargs)
-        else:
-            cls_spec_info = get_cls_info(cls_spec)
-            where = get_where_for_args(args, kwargs, cls_spec)
-        return self._store._result_set_factory(self._store, cls_spec_info,
+        if self._store._implicit_flush_block_count == 0:
+            self._store.flush()
+        find_spec = FindSpec(cls_spec)
+        where = get_where_for_args(args, kwargs, find_spec.default_cls)
+        return self._store._result_set_factory(self._store, find_spec,
                                                where, self._tables)
 
 
 Store._result_set_factory = ResultSet
 Store._table_set = TableSet
+
+
+class FindSpec(object):
+    """The set of tables or expressions in the result of L{Store.find}."""
+
+    def __init__(self, cls_spec):
+        self.is_tuple = type(cls_spec) == tuple
+        if not self.is_tuple:
+            cls_spec = (cls_spec,)
+
+        info = []
+        for item in cls_spec:
+            if isinstance(item, Expr):
+                info.append((True, item))
+            else:
+                info.append((False, get_cls_info(item)))
+        self._cls_spec_info = tuple(info)
+
+        # Do we have a single non-expression item here?
+        if not self.is_tuple and not info[0][0]:
+            self.default_cls = cls_spec[0]
+            self.default_cls_info = info[0][1]
+            self.default_order = self.default_cls_info.default_order
+        else:
+            self.default_cls = None
+            self.default_cls_info = None
+            self.default_order = Undef
+
+    def get_columns_and_tables(self):
+        columns = []
+        default_tables = []
+        for is_expr, info in self._cls_spec_info:
+            if is_expr:
+                columns.append(info)
+                if isinstance(info, Column):
+                    default_tables.append(info.table)
+            else:
+                columns.extend(info.columns)
+                default_tables.append(info.table)
+        return columns, default_tables
+
+    def is_compatible(self, find_spec):
+        """Return True if this FindSpec is compatible with a second one."""
+        if self.is_tuple != find_spec.is_tuple:
+            return False
+        if len(self._cls_spec_info) != len(find_spec._cls_spec_info):
+            return False
+        for (is_expr1, info1), (is_expr2, info2) in zip(
+            self._cls_spec_info, find_spec._cls_spec_info):
+            if is_expr1 != is_expr2:
+                return False
+            if info1 is not info2:
+                return False
+        return True
+
+    def load_objects(self, store, result, values):
+        objects = []
+        values_start = values_end = 0
+        for is_expr, info in self._cls_spec_info:
+            if is_expr:
+                values_end += 1
+                variable = getattr(info, "variable_factory", Variable)(
+                    value=values[values_start], from_db=True)
+                objects.append(variable.get())
+            else:
+                values_end += len(info.columns)
+                obj = store._load_object(info, result,
+                                         values[values_start:values_end])
+                objects.append(obj)
+            values_start = values_end
+        if self.is_tuple:
+            return tuple(objects)
+        else:
+            return objects[0]
+
+    def get_columns_and_values_for_item(self, item):
+        """Generate a comparison expression with the given item."""
+        if isinstance(item, tuple):
+            if not self.is_tuple:
+                raise TypeError("Find spec does not expect tuples.")
+        else:
+            if self.is_tuple:
+                raise TypeError("Find spec expects tuples.")
+            item = (item,)
+
+        columns = []
+        values = []
+        for (is_expr, info), value in zip(self._cls_spec_info, item):
+            if is_expr:
+                if not isinstance(value, (Expr, Variable)) and (
+                    value is not None):
+                    value = getattr(info, "variable_factory", Variable)(
+                        value=value)
+                columns.append(info)
+                values.append(value)
+            else:
+                obj_info = get_obj_info(value)
+                if obj_info.cls_info != info:
+                    raise TypeError("%r does not match %r" % (value, info))
+                columns.extend(info.primary_key)
+                values.extend(obj_info.primary_vars)
+        return columns, values
 
 
 def get_where_for_args(args, kwargs, cls=None):
@@ -1392,6 +1779,34 @@ def get_where_for_args(args, kwargs, cls=None):
     if equals:
         return And(*equals)
     return Undef
+
+
+def replace_columns(expr, columns):
+    if isinstance(expr, Select):
+        select = copy(expr)
+        select.columns = columns
+        # Remove the ordering if it won't affect the result of the query.
+        if select.limit is Undef and select.offset is Undef:
+            select.order_by = Undef
+        return select
+    elif isinstance(expr, SetExpr):
+        # The ORDER BY clause might refer to columns we have replaced.
+        # Luckily we can ignore it if there is no limit/offset.
+        if expr.order_by is not Undef and (
+            expr.limit is not Undef or expr.offset is not Undef):
+            raise FeatureError(
+                "__contains__() does not yet support set "
+                "expressions that combine ORDER BY with "
+                "LIMIT/OFFSET")
+        subexprs = [replace_columns(subexpr, columns)
+                    for subexpr in expr.exprs]
+        return expr.__class__(
+            all=expr.all, limit=expr.limit, offset=expr.offset,
+            *subexprs)
+    else:
+        raise FeatureError(
+            "__contains__() does not yet support %r expressions"
+            % (expr.__class__,))
 
 
 class AutoReload(LazyValue):

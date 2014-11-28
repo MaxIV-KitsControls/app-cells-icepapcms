@@ -18,10 +18,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from storm.exceptions import WrongStoreError, NoStoreError, ClassInfoError
-from storm.store import Store, get_where_for_args
+import weakref
+
+from storm.exceptions import (
+    ClassInfoError, FeatureError, NoStoreError, WrongStoreError)
+from storm.store import Store, get_where_for_args, LostObjectError
+from storm.variables import LazyValue
 from storm.expr import (
-    Select, Column, Exists, ComparableExpr, LeftJoin, SQLRaw,
+    Select, Column, Exists, ComparableExpr, SuffixExpr, LeftJoin, Not, SQLRaw,
     compare_columns, compile)
 from storm.info import get_cls_info, get_obj_info
 
@@ -29,33 +33,120 @@ from storm.info import get_cls_info, get_obj_info
 __all__ = ["Reference", "ReferenceSet", "Proxy"]
 
 
+class LazyAttribute(object):
+    """
+    This descriptor will call the named attribute builder to
+    initialize the given attribute on first access.  It avoids
+    having a test at every single place where the attribute is
+    touched when lazy initialization is wanted, and prevents
+    paying the price of a normal property when classes are
+    seldomly instantiated (the case of references).
+    """
+
+    def __init__(self, attr, attr_builder):
+        self._attr = attr
+        self._attr_builder = attr_builder
+
+    def __get__(self, obj, cls=None):
+        getattr(obj, self._attr_builder)()
+        return getattr(obj, self._attr)
+
+
+class PendingReferenceValue(LazyValue):
+    """Lazy value to be used as a marker for unflushed foreign keys.
+
+    When a reference is set to an object which is still unflushed,
+    the foreign key in the local object remains set to this value
+    until the object is flushed.
+    """
+
+PendingReferenceValue = PendingReferenceValue()
+
+
 class Reference(object):
-    """Descriptor for one-to-one relationships."""
+    """Descriptor for one-to-one relationships.
+
+    This is typically used when the class that it is being defined on
+    has a foreign key onto another table::
+
+        class OtherGuy(object):
+            ...
+            id = Int()
+
+        class MyGuy(object):
+            ...
+            other_guy_id = Int()
+            other_guy = Reference(other_guy_id, OtherGuy.id)
+
+    but can also be used for backwards references, where OtherGuy's
+    table has a foreign key onto the class that you want this property
+    on::
+
+        class OtherGuy(object):
+            ...
+            my_guy_id = Int() # in the database, a foreign key to my_guy.id
+
+        class MyGuy(object):
+            ...
+            id = Int()
+            other_guy = Reference(id, OtherGuy.my_guy_id, on_remote=True)
+
+    In both cases, C{MyGuy().other_guy} will resolve to the
+    C{OtherGuy} instance which is linked to it. In the first case, it
+    will be the C{OtherGuy} instance whose C{id} is equivalent to the
+    C{MyGuy}'s C{other_guy_id}; in the second, it'll be the
+    C{OtherGuy} instance whose C{my_guy_id} is equivalent to the
+    C{MyGuy}'s C{id}.
+
+    Assigning to the property, for example with C{MyGuy().other_guy =
+    OtherGuy()}, will link the objects and update either
+    C{MyGuy.other_guy_id} or C{OtherGuy.my_guy_id} accordingly.
+    """
+
+    # Must initialize _relation later because we don't want to resolve
+    # string references at definition time, since classes refered to might
+    # not be available yet.  Notice that this attribute is "public" to the
+    # Proxy class and the SQLObject wrapper.  It's still underlined because
+    # it's *NOT* part of the public API of Storm (we'll modify it without
+    # warnings!).
+    _relation = LazyAttribute("_relation", "_build_relation")
 
     def __init__(self, local_key, remote_key, on_remote=False):
-        # Reference internals are public to the Proxy.
+        """
+        Create a Reference property.
+
+        @param local_key: The sibling column which is the foreign key
+            onto C{remote_key}. (unless C{on_remote} is passed; see
+            below).
+        @param remote_key: The column on the referred-to object which
+            will have the same value as that for C{local_key} when
+            resolved on an instance.
+        @param on_remote: If specified, then the reference is
+            backwards: It is the C{remote_key} which is a foreign key
+            onto C{local_key}.
+        """
         self._local_key = local_key
         self._remote_key = remote_key
         self._on_remote = on_remote
-        self._relation = None
         self._cls = None
 
     def __get__(self, local, cls=None):
-        if local is None:
-            if self._cls is None:
-                # Must set earlier, since __eq__() has no access
-                # to the used class.
-                self._cls = _find_descriptor_class(cls, self)
-            return self
+        if local is not None:
+            # Don't use local here, as it might be security proxied.
+            local = get_obj_info(local).get_obj()
 
-        if self._relation is None:
-            # Don't use local.__class__ here, as it might be security
-            # proxied or something. # XXX UNTESTED!
-            self._build_relation(get_obj_info(local).cls_info.cls)
+        if self._cls is None:
+            self._cls = _find_descriptor_class(cls or local.__class__, self)
+
+        if local is None:
+            return self
 
         remote = self._relation.get_remote(local)
         if remote is not None:
             return remote
+
+        if self._relation.local_variables_are_none(local):
+            return None
 
         store = Store.of(local)
         if store is None:
@@ -75,23 +166,34 @@ class Reference(object):
         return remote
 
     def __set__(self, local, remote):
-        if self._relation is None:
-            # Don't use local.__class__ here, as it might be security
-            # proxied or something. # XXX UNTESTED!
-            self._build_relation(get_obj_info(local).cls_info.cls)
+        # Don't use local here, as it might be security proxied or something.
+        local = get_obj_info(local).get_obj()
+
+        if self._cls is None:
+            self._cls = _find_descriptor_class(local.__class__, self)
 
         if remote is None:
-            remote = self._relation.get_remote(local)
-            if remote is not None:
-                self._relation.unlink(get_obj_info(local),
-                                      get_obj_info(remote), True)
+            if self._on_remote:
+                remote = self.__get__(local)
+                if remote is None:
+                    return
+            else:
+                remote = self._relation.get_remote(local)
+            if remote is None:
+                remote_info = None
+            else:
+                remote_info = get_obj_info(remote)
+            self._relation.unlink(get_obj_info(local), remote_info, True)
         else:
+            # Don't use remote here, as it might be
+            # security proxied or something.
+            try:
+                remote = get_obj_info(remote).get_obj()
+            except ClassInfoError:
+                pass # It might fail when remote is a tuple or a raw value.
             self._relation.link(local, remote, True)
 
-    def _build_relation(self, used_cls=None):
-        if self._cls is None:
-            assert used_cls is not None
-            self._cls = _find_descriptor_class(used_cls, self)
+    def _build_relation(self):
         resolver = PropertyResolver(self, self._cls)
         self._local_key = resolver.resolve(self._local_key)
         self._remote_key = resolver.resolve(self._remote_key)
@@ -99,12 +201,20 @@ class Reference(object):
                                   False, self._on_remote)
 
     def __eq__(self, other):
-        if self._relation is None:
-            self._build_relation()
         return self._relation.get_where_for_local(other)
+
+    def __ne__(self, other):
+        return Not(self == other)
 
 
 class ReferenceSet(object):
+
+    # Must initialize later because we don't want to resolve string
+    # references at definition time, since classes refered to might
+    # not be available yet.
+    _relation1 = LazyAttribute("_relation1", "_build_relations")
+    _relation2 = LazyAttribute("_relation2", "_build_relations")
+    _order_by = LazyAttribute("_order_by", "_build_relations")
 
     def __init__(self, local_key1, remote_key1,
                  remote_key2=None, local_key2=None, order_by=None):
@@ -112,18 +222,19 @@ class ReferenceSet(object):
         self._remote_key1 = remote_key1
         self._remote_key2 = remote_key2
         self._local_key2 = local_key2
-        self._order_by = order_by
-        self._relation1 = None
-        self._relation2 = None
+        self._default_order_by = order_by
+        self._cls = None
 
     def __get__(self, local, cls=None):
+        if local is not None:
+            # Don't use local here, as it might be security proxied.
+            local = get_obj_info(local).get_obj()
+
+        if self._cls is None:
+            self._cls = _find_descriptor_class(cls or local.__class__, self)
+
         if local is None:
             return self
-
-        if self._relation1 is None:
-            # Don't use local.__class__ here, as it might be security
-            # proxied or something. # XXX UNTESTED!
-            self._build_relations(get_obj_info(local).cls_info.cls)
 
         #store = Store.of(local)
         #if store is None:
@@ -136,8 +247,16 @@ class ReferenceSet(object):
                                              self._relation2, local,
                                              self._order_by)
 
-    def _build_relations(self, used_cls):
-        resolver = PropertyResolver(self, used_cls)
+    def __set__(self, local, value):
+        raise FeatureError("Assigning to ResultSets not supported")
+
+    def _build_relations(self):
+        resolver = PropertyResolver(self, self._cls)
+
+        if self._default_order_by is not None:
+            self._order_by = resolver.resolve(self._default_order_by)
+        else:
+            self._order_by = None
 
         self._local_key1 = resolver.resolve(self._local_key1)
         self._remote_key1 = resolver.resolve(self._remote_key1)
@@ -149,12 +268,27 @@ class ReferenceSet(object):
             self._remote_key2 = resolver.resolve(self._remote_key2)
             self._relation2 = Relation(self._local_key2, self._remote_key2,
                                        True, True)
+        else:
+            self._relation2 = None
 
 
 class BoundReferenceSetBase(object):
 
+    def find(self, *args, **kwargs):
+        store = Store.of(self._local)
+        if store is None:
+            raise NoStoreError("Can't perform operation without a store")
+        where = self._get_where_clause()
+        result = store.find(self._target_cls, where, *args, **kwargs)
+        if self._order_by is not None:
+            result.order_by(*self._order_by)
+        return result
+
     def __iter__(self):
         return self.find().__iter__()
+
+    def __contains__(self, item):
+        return item in self.find()
 
     def first(self, *args, **kwargs):
         return self.find(*args, **kwargs).first()
@@ -186,15 +320,8 @@ class BoundReferenceSet(BoundReferenceSetBase):
         self._target_cls = self._relation.remote_cls
         self._order_by = order_by
 
-    def find(self, *args, **kwargs):
-        store = Store.of(self._local)
-        if store is None:
-            raise NoStoreError("Can't perform operation without a store")
-        where = self._relation.get_where_for_remote(self._local)
-        result = store.find(self._target_cls, where, *args, **kwargs)
-        if self._order_by is not None:
-            result.order_by(self._order_by)
-        return result
+    def _get_where_clause(self):
+        return self._relation.get_where_for_remote(self._local)
 
     def clear(self, *args, **kwargs):
         set_kwargs = {}
@@ -225,16 +352,9 @@ class BoundIndirectReferenceSet(BoundReferenceSetBase):
         self._target_cls = relation2.local_cls
         self._link_cls = relation1.remote_cls
 
-    def find(self, *args, **kwargs):
-        store = Store.of(self._local)
-        if store is None:
-            raise NoStoreError("Can't perform operation without a store")
-        where = (self._relation1.get_where_for_remote(self._local) &
-                 self._relation2.get_where_for_join())
-        result = store.find(self._target_cls, where, *args, **kwargs)
-        if self._order_by is not None:
-            result.order_by(self._order_by)
-        return result
+    def _get_where_clause(self):
+        return (self._relation1.get_where_for_remote(self._local) &
+                self._relation2.get_where_for_join())
 
     def clear(self, *args, **kwargs):
         store = Store.of(self._local)
@@ -251,14 +371,16 @@ class BoundIndirectReferenceSet(BoundReferenceSetBase):
     def add(self, remote):
         link = self._link_cls()
         self._relation1.link(self._local, link, True)
-        # Don't use remote here, as it might be security
-        # proxied or something. # XXX UNTESTED!
-        self._relation2.link(get_obj_info(remote).get_obj(), link, True)
+        # Don't use remote here, as it might be security proxied or something.
+        remote = get_obj_info(remote).get_obj()
+        self._relation2.link(remote, link, True)
 
     def remove(self, remote):
         store = Store.of(self._local)
         if store is None:
             raise NoStoreError("Can't perform operation without a store")
+        # Don't use remote here, as it might be security proxied or something.
+        remote = get_obj_info(remote).get_obj()
         where = (self._relation1.get_where_for_remote(self._local) &
                  self._relation2.get_where_for_remote(remote))
         store.find(self._link_cls, where).remove()
@@ -313,16 +435,10 @@ class Proxy(ComparableExpr):
 
 @compile.when(Proxy)
 def compile_proxy(compile, proxy, state):
-    # References build the relation lazily so that they don't immediately
-    # try to resolve string properties. Unfortunately we have to check that
-    # here as well and make sure that at this point it's actually there.
-    # Maybe this should use the same trick as _remote_prop on Proxy
-    if proxy._reference._relation is None:
-        proxy._reference._build_relation()
-
     # Inject the join between the table of the class holding the proxy
     # and the table of the class which is the target of the reference.
-    left_join = LeftJoin(proxy._remote_prop.table,
+    left_join = LeftJoin(proxy._reference._relation.local_cls,
+                         proxy._remote_prop.table,
                          proxy._reference._relation.get_where_for_join())
     state.auto_tables.append(left_join)
 
@@ -361,7 +477,23 @@ class Relation(object):
         self._r_to_l = {}
 
     def get_remote(self, local):
-        return get_obj_info(local).get(self)
+        """Return the remote object for this relation, using the local cache.
+
+        If the object in the cache is invalidated, we validate it again to
+        check if it's still in the database.
+        """
+        local_info = get_obj_info(local)
+        try:
+            obj = local_info[self]["remote"]
+        except KeyError:
+            return None
+        remote_info = get_obj_info(obj)
+        if remote_info.get("invalidated"):
+            try:
+                Store.of(obj)._validate_alive(remote_info)
+            except LostObjectError:
+                return None
+        return obj
 
     def get_where_for_remote(self, local):
         """Generate a column comparison expression for reference properties.
@@ -398,9 +530,9 @@ class Relation(object):
             else:
                 remote_variables = other
         else:
-            # Object may be security proxied or something, so
-            # we get the real object here. # XXX UNTESTED!
-            other = obj_info.get_obj()
+            # Don't use other here, as it might be
+            # security proxied or something.
+            other = get_obj_info(other).get_obj()
             remote_variables = self.get_remote_variables(other)
         return compare_columns(self.local_key, remote_variables)
 
@@ -411,6 +543,14 @@ class Relation(object):
         local_info = get_obj_info(local)
         return tuple(local_info.variables[column]
                      for column in self._get_local_columns(local.__class__))
+
+    def local_variables_are_none(self, local):
+        """Return true if all variables of the local key have None values."""
+        local_info = get_obj_info(local)
+        for column in self._get_local_columns(local.__class__):
+            if local_info.variables[column].get() is not None:
+                return False
+        return True
 
     def get_remote_variables(self, remote):
         remote_info = get_obj_info(remote)
@@ -445,33 +585,38 @@ class Relation(object):
         local_store = Store.of(local)
         remote_store = Store.of(remote)
 
-        if local_store is None:
-            if remote_store is None:
-                local_info.event.hook("added", self._add_all, local_info)
-                remote_info.event.hook("added", self._add_all, local_info)
-            else:
-                remote_store.add(local)
-                local_store = remote_store
-        elif remote_store is None:
-            local_store.add(remote)
-        elif local_store is not remote_store:
-            raise WrongStoreError("%r and %r cannot be linked because they "
-                                  "are in different stores." %
-                                  (local, remote))
+        if setting:
+            if local_store is None:
+                if remote_store is None:
+                    local_info.event.hook("added", self._add_all, local_info)
+                    remote_info.event.hook("added", self._add_all, local_info)
+                else:
+                    remote_store.add(local)
+                    local_store = remote_store
+            elif remote_store is None:
+                local_store.add(remote)
+            elif local_store is not remote_store:
+                raise WrongStoreError("%r and %r cannot be linked because they "
+                                      "are in different stores." %
+                                      (local, remote))
 
         # In cases below, we maintain a reference to the remote object
         # to make sure it won't get deallocated while the link is active.
+        relation_data = local_info.get(self)
         if self.many:
-            relations = local_info.get(self)
-            if relations is None:
-                local_info[self] = {remote_info: remote}
+            if relation_data is None:
+                relation_data = local_info[self] = {"remote":
+                                                    {remote_info: remote}}
             else:
-                relations[remote_info] = remote
+                relation_data["remote"][remote_info] = remote
         else:
-            old_remote = local_info.get(self)
-            if old_remote is not None:
-                self.unlink(local_info, get_obj_info(old_remote))
-            local_info[self] = remote
+            if relation_data is None:
+                relation_data = local_info[self] = {"remote": remote}
+            else:
+                old_remote = relation_data.get("remote")
+                if old_remote is not None:
+                    self.unlink(local_info, get_obj_info(old_remote))
+                relation_data["remote"] = remote
 
         if setting:
             local_vars = local_info.variables
@@ -479,15 +624,18 @@ class Relation(object):
             pairs = zip(self._get_local_columns(local.__class__),
                         self.remote_key)
             if self.on_remote:
+                local_has_changed = False
                 for local_column, remote_column in pairs:
                     local_var = local_vars[local_column]
                     if not local_var.is_defined():
-                        track_changes = True
+                        remote_vars[remote_column].set(PendingReferenceValue)
                     else:
                         remote_vars[remote_column].set(local_var.get())
+                    if local_var.has_changed():
+                        local_has_changed = True
 
-                if local_store is not None:
-                    local_store.add_flush_order(local, remote)
+                if local_has_changed:
+                    self._add_flush_order(local_info, remote_info)
 
                 local_info.event.hook("changed", self._track_local_changes,
                                       remote_info)
@@ -495,16 +643,22 @@ class Relation(object):
                                       remote_info)
                 #local_info.event.hook("removed", self._break_on_local_removed,
                 #                      remote_info)
+                remote_info.event.hook("removed", self._break_on_remote_removed,
+                                       weakref.ref(local_info))
             else:
+                remote_has_changed = False
                 for local_column, remote_column in pairs:
                     remote_var = remote_vars[remote_column]
                     if not remote_var.is_defined():
-                        track_changes = True
+                        local_vars[local_column].set(PendingReferenceValue)
                     else:
                         local_vars[local_column].set(remote_var.get())
+                    if remote_var.has_changed():
+                        remote_has_changed = True
 
-                if local_store is not None:
-                    local_store.add_flush_order(remote, local)
+                if remote_has_changed:
+                    self._add_flush_order(local_info, remote_info,
+                                          remote_first=True)
 
                 remote_info.event.hook("changed", self._track_remote_changes,
                                        local_info)
@@ -519,7 +673,10 @@ class Relation(object):
             local_info.event.hook("changed", self._break_on_local_diverged,
                                   remote_info)
             remote_info.event.hook("changed", self._break_on_remote_diverged,
-                                   local_info)
+                                   weakref.ref(local_info))
+            if self.on_remote:
+                remote_info.event.hook("removed", self._break_on_remote_removed,
+                                       weakref.ref(local_info))
 
     def unlink(self, local_info, remote_info, setting=False):
         """Break the relation between the local and remote objects.
@@ -527,13 +684,16 @@ class Relation(object):
         @param setting: If true objects will be changed to persist breakage.
         """
         unhook = False
-        if self.many:
-            relations = local_info.get(self)
-            if relations is not None and remote_info in relations:
-                relations.pop(remote_info, None)
-                unhook = True
-        elif local_info.pop(self, None) is not None:
-            unhook = True
+        relation_data = local_info.get(self)
+        if relation_data is not None:
+            if self.many:
+                remote_infos = relation_data["remote"]
+                if remote_info in remote_infos:
+                    remote_infos.pop(remote_info, None)
+                    unhook = True
+            else:
+                if relation_data.pop("remote", None) is not None:
+                    unhook = True
 
         if unhook:
             local_store = Store.of(local_info)
@@ -548,19 +708,24 @@ class Relation(object):
             remote_info.event.unhook("changed", self._track_remote_changes,
                                      local_info)
             remote_info.event.unhook("changed", self._break_on_remote_diverged,
-                                     local_info)
+                                     weakref.ref(local_info))
             remote_info.event.unhook("flushed", self._break_on_remote_flushed,
                                      local_info)
+            remote_info.event.unhook("removed", self._break_on_remote_removed,
+                                     weakref.ref(local_info))
 
             if local_store is None:
-                if not self.many or not relations:
+                if not self.many or not remote_infos:
                     local_info.event.unhook("added", self._add_all, local_info)
                 remote_info.event.unhook("added", self._add_all, local_info)
             else:
-                if self.on_remote:
-                    local_store.remove_flush_order(local_info, remote_info)
-                else:
-                    local_store.remove_flush_order(remote_info, local_info)
+                flush_order = relation_data.get("flush_order")
+                if flush_order is not None and remote_info in flush_order:
+                    if self.on_remote:
+                        local_store.remove_flush_order(local_info, remote_info)
+                    else:
+                        local_store.remove_flush_order(remote_info, local_info)
+                    flush_order.remove(remote_info)
 
         if setting:
             if self.on_remote:
@@ -572,6 +737,29 @@ class Relation(object):
                 local_cols = self._get_local_columns(local_info.cls_info.cls)
                 for local_column in local_cols:
                     local_vars[local_column].set(None)
+
+    def _add_flush_order(self, local_info, remote_info, remote_first=False):
+        """Tell the Store to flush objects in the specified order.
+
+        We need to conditionally remove the flush order in unlink() only
+        if we added it here.  Note that we can't just check if the Store
+        has ordering on the (local, remote) pair, since it may have more
+        than one request for ordering it, from different relations.
+
+        @param local_info: The object info for the local object.
+        @param remote_info: The object info for the remote object.
+        @param remote_first: If True, remote_info will be flushed
+                             before local_info.
+        """
+        local_store = Store.of(local_info)
+        if local_store is not None:
+            flush_order = local_info[self].setdefault("flush_order", set())
+            if remote_info not in flush_order:
+                flush_order.add(remote_info)
+                if remote_first:
+                    local_store.add_flush_order(remote_info, local_info)
+                else:
+                    local_store.add_flush_order(local_info, remote_info)
 
     def _track_local_changes(self, local_info, local_variable,
                              old_value, new_value, fromdb, remote_info):
@@ -585,6 +773,7 @@ class Relation(object):
                                                 local_variable.column)
         if remote_column is not None:
             remote_info.variables[remote_column].set(new_value)
+            self._add_flush_order(local_info, remote_info)
 
     def _track_remote_changes(self, remote_info, remote_variable,
                               old_value, new_value, fromdb, local_info):
@@ -598,6 +787,7 @@ class Relation(object):
                                               remote_variable.column)
         if local_column is not None:
             local_info.variables[local_column].set(new_value)
+            self._add_flush_order(local_info, remote_info, remote_first=True)
 
     def _break_on_local_diverged(self, local_info, local_variable,
                                  old_value, new_value, fromdb, remote_info):
@@ -615,13 +805,16 @@ class Relation(object):
                 self.unlink(local_info, remote_info)
 
     def _break_on_remote_diverged(self, remote_info, remote_variable,
-                                  old_value, new_value, fromdb, local_info):
+                                  old_value, new_value, fromdb, local_info_ref):
         """Break the remote/local relationship on diverging changes.
 
         This hook ensures that if the remote object has an attribute
         changed by hand in a way that diverges from the local object,
         the relationship is undone.
         """
+        local_info = local_info_ref()
+        if local_info is None:
+            return
         local_column = self._get_local_column(local_info.cls_info.cls,
                                               remote_variable.column)
         if local_column is not None:
@@ -637,6 +830,12 @@ class Relation(object):
         """Break the remote/local relationship on flush."""
         self.unlink(local_info, remote_info)
 
+    def _break_on_remote_removed(self, remote_info, local_info_ref):
+        """Break the remote relationship when the remote object is removed."""
+        local_info = local_info_ref()
+        if local_info is not None:
+            self.unlink(local_info, remote_info)
+
     def _add_all(self, obj_info, local_info):
         store = Store.of(obj_info)
         store.add(local_info)
@@ -645,16 +844,14 @@ class Relation(object):
         def add(remote_info):
             remote_info.event.unhook("added", self._add_all, local_info)
             store.add(remote_info)
-            if self.on_remote:
-                store.add_flush_order(local_info, remote_info)
-            else:
-                store.add_flush_order(remote_info, local_info)
+            self._add_flush_order(local_info, remote_info,
+                                  remote_first=(not self.on_remote))
 
         if self.many:
-            for remote_info in local_info[self]:
+            for remote_info in local_info[self]["remote"]:
                 add(remote_info)
         else:
-            add(get_obj_info(local_info[self]))
+            add(get_obj_info(local_info[self]["remote"]))
 
     def _get_remote_columns(self, remote_cls):
         try:
@@ -715,6 +912,12 @@ class PropertyResolver(object):
             return self.resolve(property)
         elif isinstance(property, basestring):
             return self._resolve_string(property)
+        elif isinstance(property, SuffixExpr):
+            # XXX This covers cases like order_by=Desc("Bar.id"), see #620369.
+            # Eventually we might want to add support for other types of
+            # expressions
+            property.expr = self.resolve(property.expr)
+            return property
         elif not isinstance(property, Column):
             return _find_descriptor_obj(self._used_cls, property)
         return property
@@ -722,7 +925,7 @@ class PropertyResolver(object):
     def _resolve_string(self, property_path):
         if self._registry is None:
             try:
-                registry = self._used_cls._storm_property_registry
+                self._registry = self._used_cls._storm_property_registry
             except AttributeError:
                 raise RuntimeError("When using strings on references, "
                                    "classes involved must be subclasses "
@@ -730,7 +933,7 @@ class PropertyResolver(object):
             cls = _find_descriptor_class(self._used_cls, self._reference)
             self._namespace = "%s.%s" % (cls.__module__, cls.__name__)
 
-        return registry.get(property_path, self._namespace)
+        return self._registry.get(property_path, self._namespace)
 
 
 def _find_descriptor_class(used_cls, descr):

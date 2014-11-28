@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2006, 2007 Canonical
+# Copyright (c) 2006-2010 Canonical
 #
 # Written by Gustavo Niemeyer <gustavo@niemeyer.net>
 #
@@ -24,29 +24,35 @@ L{SQLObjectBase} is the central point of compatibility.
 """
 
 import re
+import warnings
 
 from storm.properties import (
     RawStr, Int, Bool, Float, DateTime, Date, TimeDelta)
 from storm.references import Reference, ReferenceSet
 from storm.properties import SimpleProperty, PropertyPublisherMeta
 from storm.variables import Variable
-from storm.exceptions import StormError
-from storm.info import get_cls_info
-from storm.store import Store
+from storm.exceptions import StormError, NotOneError
+from storm.info import get_cls_info, ClassAlias
+from storm.store import AutoReload, Store
 from storm.base import Storm
-from storm.expr import SQL, SQLRaw, Desc, And, Or, Not, In, Like
+from storm.expr import (
+    SQL, SQLRaw, Desc, And, Or, Not, In, Like, AutoTables, LeftJoin, Column,
+    compare_columns)
 from storm.tz import tzutc
 from storm import Undef
 
 
-__all__ = ["SQLObjectBase", "StringCol", "IntCol", "BoolCol", "FloatCol",
-           "DateCol", "UtcDateTimeCol", "IntervalCol", "ForeignKey",
-           "SQLMultipleJoin", "SQLRelatedJoin", "DESC", "AND", "OR",
-           "NOT", "IN", "LIKE", "SQLConstant", "SQLObjectNotFound",
-           "CONTAINSSTRING"]
+__all__ = [
+    "SQLObjectBase", "StringCol", "IntCol", "BoolCol", "FloatCol",
+    "DateCol", "UtcDateTimeCol", "IntervalCol", "ForeignKey",
+    "SQLMultipleJoin", "SQLRelatedJoin", "SingleJoin", "DESC",
+    "AND", "OR", "NOT", "IN", "LIKE", "SQLConstant",
+    "CONTAINSSTRING", "SQLObjectMoreThanOneResultError", "SQLObjectNotFound",
+    "SQLObjectResultSet"]
 
 
 DESC, AND, OR, NOT, IN, LIKE, SQLConstant = Desc, And, Or, Not, In, Like, SQL
+SQLObjectMoreThanOneResultError = NotOneError
 
 _IGNORED = object()
 
@@ -63,7 +69,7 @@ class SQLObjectStyle(object):
         if self.longID:
             return self.tableReference(table_name)
         else:
-            return 'id'
+            return "id"
 
     def pythonClassToAttr(self, class_name):
         return self._lowerword(class_name)
@@ -89,23 +95,23 @@ class SQLObjectStyle(object):
     def tableReference(self, table_name):
         return table_name+"_id"
 
-    def _mixed_to_under(self, name, _re=re.compile(r'[A-Z]+')):
-        if name.endswith('ID'):
+    def _mixed_to_under(self, name, _re=re.compile("[A-Z]+")):
+        if name.endswith("ID"):
             return self._mixed_to_under(name[:-2]+"_id")
         name = _re.sub(self._mixed_to_under_sub, name)
-        if name.startswith('_'):
+        if name.startswith("_"):
             return name[1:]
         return name
 
     def _mixed_to_under_sub(self, match):
         m = match.group(0).lower()
         if len(m) > 1:
-            return '_%s_%s' % (m[:-1], m[-1])
+            return "_%s_%s" % (m[:-1], m[-1])
         else:
-            return '_%s' % m
+            return "_%s" % m
 
-    def _under_to_mixed(self, name, _re=re.compile('_.')):
-        if name.endswith('_id'):
+    def _under_to_mixed(self, name, _re=re.compile("_.")):
+        if name.endswith("_id"):
             return self._under_to_mixed(name[:-3] + "ID")
         return _re.sub(self._under_to_mixed_sub, name)
 
@@ -161,7 +167,9 @@ class SQLObjectMeta(PropertyPublisherMeta):
             if isinstance(prop, ForeignKey):
                 db_name = prop.kwargs.get("dbName", attr)
                 local_prop_name = style.instanceAttrToIDAttr(attr)
-                dict[local_prop_name] = local_prop = Int(db_name)
+                dict[local_prop_name] = local_prop = Int(
+                    db_name, allow_none=not prop.kwargs.get("notNull", False),
+                    validator=prop.kwargs.get("storm_validator", None))
                 dict[attr] = Reference(local_prop,
                                        "%s.<primary key>" % prop.foreignKey)
                 attr_to_prop[attr] = local_prop_name
@@ -179,19 +187,40 @@ class SQLObjectMeta(PropertyPublisherMeta):
                         return obj
                     func.func_name = method_name
                     dict[method_name] = classmethod(func)
+            elif isinstance(prop, SQLMultipleJoin):
+                # Generate addFoo/removeFoo names.
+                def define_add_remove(dict, prop):
+                    capitalised_name = (prop._otherClass[0].capitalize() +
+                                        prop._otherClass[1:])
+                    def add(self, obj):
+                        prop._get_bound_reference_set(self).add(obj)
+                    add.__name__ = "add" + capitalised_name
+                    dict.setdefault(add.__name__, add)
+
+                    def remove(self, obj):
+                        prop._get_bound_reference_set(self).remove(obj)
+                    remove.__name__ = "remove" + capitalised_name
+                    dict.setdefault(remove.__name__, remove)
+                define_add_remove(dict, prop)
 
 
-        id_type = dict.get("_idType", int)
+        id_type = dict.setdefault("_idType", int)
         id_cls = {int: Int, str: RawStr, unicode: AutoUnicode}[id_type]
-        dict[id_name] = id_cls(primary=True)
+        dict["id"] = id_cls(id_name, primary=True, default=AutoReload)
+        attr_to_prop[id_name] = "id"
 
         # Notice that obj is the class since this is the metaclass.
         obj = super(SQLObjectMeta, cls).__new__(cls, name, bases, dict)
 
         property_registry = obj._storm_property_registry
 
-        property_registry.add_property(obj, getattr(obj, id_name),
+        property_registry.add_property(obj, getattr(obj, "id"),
                                        "<primary key>")
+
+        # Let's explore this same mechanism to register table names,
+        # so that we can find them to handle prejoinClauseTables.
+        property_registry.add_property(obj, getattr(obj, "id"),
+                                       "<table %s>" % table_name)
 
         for fake_name, real_name in attr_to_prop.items():
             prop = getattr(obj, real_name)
@@ -221,9 +250,9 @@ class BoundDotQ(object):
         self._cls = cls
 
     def __getattr__(self, attr):
-        if attr.startswith('__'):
+        if attr.startswith("__"):
             raise AttributeError(attr)
-        elif attr == 'id':
+        elif attr == "id":
             cls_info = get_cls_info(self._cls)
             return cls_info.primary_key[0]
         else:
@@ -243,10 +272,16 @@ class SQLObjectBase(Storm):
     __metaclass__ = SQLObjectMeta
 
     q = DotQ()
+    _SO_creating = False
 
     def __init__(self, *args, **kwargs):
-        self._get_store().add(self)
-        self._create(None, **kwargs)
+        store = self._get_store()
+        store.add(self)
+        try:
+            self._create(None, **kwargs)
+        except:
+            store.remove(self)
+            raise
 
     def __storm_loaded__(self):
         self._init(None)
@@ -255,7 +290,9 @@ class SQLObjectBase(Storm):
         pass
 
     def _create(self, _id_, **kwargs):
+        self._SO_creating = True
         self.set(**kwargs)
+        del self._SO_creating
         self._init(None)
 
     def set(self, **kwargs):
@@ -279,6 +316,7 @@ class SQLObjectBase(Storm):
 
     @classmethod
     def get(cls, id):
+        id = cls._idType(id)
         store = cls._get_store()
         obj = store.get(cls, id)
         if obj is None:
@@ -302,121 +340,301 @@ class SQLObjectBase(Storm):
         return tuple(result)
 
     @classmethod
-    def _find(cls, clause=None, clauseTables=None, orderBy=None,
-              limit=None, distinct=None, prejoins=_IGNORED,
-              prejoinClauseTables=_IGNORED, _by={}):
-        store = cls._get_store()
-        if clause is None:
-            args = ()
-        else:
-            args = (clause,)
-        if clauseTables is not None:
-            clauseTables = set(table.lower() for table in clauseTables)
-            clauseTables.add(cls.__storm_table__.lower())
-            store = store.using(*clauseTables)
-        result = store.find(cls, *args, **_by)
-        if orderBy is not None:
-            result.order_by(*cls._parse_orderBy(orderBy))
-        result.config(limit=limit, distinct=distinct)
-        return result
-
-    @classmethod
     def select(cls, *args, **kwargs):
-        result = cls._find(*args, **kwargs)
-        return SQLObjectResultSet(result, cls)
+        return SQLObjectResultSet(cls, *args, **kwargs)
 
     @classmethod
     def selectBy(cls, orderBy=None, **kwargs):
-        result = cls._find(orderBy=orderBy, _by=kwargs)
-        return SQLObjectResultSet(result, cls)
+        return SQLObjectResultSet(cls, orderBy=orderBy, by=kwargs)
 
     @classmethod
     def selectOne(cls, *args, **kwargs):
-        return cls._find(*args, **kwargs).one()
+        return SQLObjectResultSet(cls, *args, **kwargs)._one()
 
     @classmethod
     def selectOneBy(cls, **kwargs):
-        return cls._find(_by=kwargs).one()
+        return SQLObjectResultSet(cls, by=kwargs)._one()
 
     @classmethod
     def selectFirst(cls, *args, **kwargs):
-        return cls._find(*args, **kwargs).first()
+        return SQLObjectResultSet(cls, *args, **kwargs)._first()
 
     @classmethod
     def selectFirstBy(cls, orderBy=None, **kwargs):
-        return cls._find(orderBy=orderBy, _by=kwargs).first()
+        result = SQLObjectResultSet(cls, orderBy=orderBy, by=kwargs)
+        return result._first()
 
-    # Dummy methods.
-    def sync(self): pass
-    def syncUpdate(self): pass
+    def syncUpdate(self):
+        self._get_store().flush()
+
+    def sync(self):
+        store = self._get_store()
+        store.flush()
+        store.autoreload(self)
 
 
 class SQLObjectResultSet(object):
+    """SQLObject-equivalent of the ResultSet class in Storm.
 
-    def __init__(self, result_set, cls):
-        self._result_set = result_set
+    Storm handles joins in the Store interface, while SQLObject
+    does that in the result one.  To offer support for prejoins,
+    we can't simply wrap our ResultSet instance, and instead have
+    to postpone the actual find until the very last moment.
+    """
+
+    def __init__(self, cls, clause=None, clauseTables=None, orderBy=None,
+                 limit=None, distinct=None, prejoins=None,
+                 prejoinClauseTables=None, selectAlso=None,
+                 by={}, prepared_result_set=None, slice=None):
         self._cls = cls
+        self._clause = clause
+        self._clauseTables = clauseTables
+        self._orderBy = orderBy
+        self._limit = limit
+        self._distinct = distinct
+        self._prejoins = prejoins
+        self._prejoinClauseTables = prejoinClauseTables
+        self._selectAlso = selectAlso
 
-    def count(self):
-        return self._result_set.count()
+        # Parameters not mapping SQLObject:
+        self._by = by
+        self._slice = slice
+        self._prepared_result_set = prepared_result_set
+        self._finished_result_set = None
+
+    def _copy(self, **kwargs):
+        copy = self.__class__(self._cls, **kwargs)
+        for name, value in self.__dict__.iteritems():
+            if name[1:] not in kwargs and name != "_finished_result_set":
+                setattr(copy, name, value)
+        return copy
+
+    def _prepare_result_set(self):
+        store = self._cls._get_store()
+
+        args = []
+        if self._clause:
+            args.append(self._clause)
+
+        for key, value in self._by.items():
+            args.append(getattr(self._cls, key) == value)
+
+        tables = []
+
+        if self._clauseTables is not None:
+            tables.extend(self._clauseTables)
+
+        if not (self._prejoins or self._prejoinClauseTables):
+            find_spec = self._cls
+        else:
+            find_spec = [self._cls]
+
+            if self._prejoins:
+                already_prejoined = {}
+                last_prejoin = 0
+                join = self._cls
+                for prejoin_path in self._prejoins:
+                    local_cls = self._cls
+                    path = ()
+                    for prejoin_attr in prejoin_path.split("."):
+                        path += (prejoin_attr,)
+                        # If we've already prejoined this column, we're done.
+                        if path in already_prejoined:
+                            local_cls = already_prejoined[path]
+                            continue
+                        # Otherwise, join the table
+                        relation = getattr(local_cls, prejoin_attr)._relation
+                        last_prejoin += 1
+                        remote_cls = ClassAlias(relation.remote_cls,
+                                                '_prejoin%d' % last_prejoin)
+                        join_expr = join_aliased_relation(
+                            local_cls, remote_cls, relation)
+                        join = LeftJoin(join, remote_cls, join_expr)
+                        find_spec.append(remote_cls)
+                        already_prejoined[path] = remote_cls
+                        local_cls = remote_cls
+                if join is not self._cls:
+                    tables.append(join)
+
+            if self._prejoinClauseTables:
+                property_registry = self._cls._storm_property_registry
+                for table in self._prejoinClauseTables:
+                    cls = property_registry.get("<table %s>" % table).cls
+                    find_spec.append(cls)
+
+            find_spec = tuple(find_spec)
+
+        if tables:
+            # If we are adding extra tables, make sure the main table
+            # is included.
+            tables.insert(0, self._cls.__storm_table__)
+            # Inject an AutoTables expression with a dummy true value to
+            # be ANDed in the WHERE clause, so that we can introduce our
+            # tables into the dynamic table handling of Storm without
+            # disrupting anything else.
+            args.append(AutoTables(SQL("1=1"), tables))
+
+        if self._selectAlso is not None:
+            if type(find_spec) is not tuple:
+                find_spec = (find_spec, SQL(self._selectAlso))
+            else:
+                find_spec += (SQL(self._selectAlso),)
+
+        return store.find(find_spec, *args)
+
+    def _finish_result_set(self):
+        if self._prepared_result_set is not None:
+            result = self._prepared_result_set
+        else:
+            result = self._prepare_result_set()
+
+        if self._orderBy is not None:
+            result.order_by(*self._cls._parse_orderBy(self._orderBy))
+
+        if self._limit is not None or self._distinct is not None:
+            result.config(limit=self._limit, distinct=self._distinct)
+
+        if self._slice is not None:
+            result = result[self._slice]
+
+        return result
+
+    @property
+    def _result_set(self):
+        if self._finished_result_set is None:
+            self._finished_result_set = self._finish_result_set()
+        return self._finished_result_set
+
+    def _without_prejoins(self, always_copy=False):
+        if always_copy or self._prejoins or self._prejoinClauseTables:
+            return self._copy(prejoins=None, prejoinClauseTables=None)
+        else:
+            return self
+
+    def _one(self):
+        """Internal API for the base class."""
+        return detuplelize(self._result_set.one())
+
+    def _first(self):
+        """Internal API for the base class."""
+        return detuplelize(self._result_set.first())
 
     def __iter__(self):
-        return self._result_set.__iter__()
+        for item in self._result_set:
+            yield detuplelize(item)
 
     def __getitem__(self, index):
-        result_set = self._result_set[index]
         if isinstance(index, slice):
-            return self.__class__(result_set, self._cls)
-        return result_set
+            if index.start and index.start < 0 or (
+                index.stop and index.stop < 0):
+                L = list(self)
+                if len(L) > 100:
+                    warnings.warn('Negative indices when slicing are slow: '
+                                  'fetched %d rows.' % (len(L),))
+                start, stop, step = index.indices(len(L))
+                assert step == 1, "slice step must be 1"
+                index = slice(start, stop)
+            return self._copy(slice=index)
+        else:
+            if index < 0:
+                L = list(self)
+                if len(L) > 100:
+                    warnings.warn('Negative indices are slow: '
+                                  'fetched %d rows.' % (len(L),))
+                return detuplelize(L[index])
+            return detuplelize(self._result_set[index])
+
+    def __contains__(self, item):
+        result_set = self._without_prejoins()._result_set
+        return item in result_set
 
     def __nonzero__(self):
-        return self._result_set.any() is not None
+        """Return C{True} if this result set contains any results.
+
+        @note: This method is provided for compatibility with SQL Object.  For
+            new code, prefer L{is_empty}.  It's compatible with L{ResultSet}
+            which doesn't have a C{__nonzero__} implementation.
+        """
+        return not self.is_empty()
+
+    def is_empty(self):
+        """Return C{True} if this result set doesn't contain any results."""
+        result_set = self._without_prejoins()._result_set
+        return result_set.is_empty()
+
+    def count(self):
+        result_set = self._without_prejoins()._result_set
+        return result_set.count()
 
     def orderBy(self, orderBy):
-        result_set = self._result_set.copy()
-        result_set.order_by(*self._cls._parse_orderBy(orderBy))
-        return self.__class__(result_set, self._cls)
+        return self._copy(orderBy=orderBy)
 
     def limit(self, limit):
-        result_set = self._result_set.copy().config(limit=limit)
-        return self.__class__(result_set, self._cls)
+        return self._copy(limit=limit)
 
     def distinct(self):
-        result_set = self._result_set.copy().config(distinct=True)
-        result_set.order_by() # Remove default order.
-        return self.__class__(result_set, self._cls)
+        return self._copy(distinct=True, orderBy=None)
 
-    def union(self, otherSelect, unionAll=False, orderBy=None):
-        result_set = self._result_set.union(otherSelect._result_set,
-                                            all=unionAll)
-        result_set.order_by() # Remove default order.
-        new = self.__class__(result_set, self._cls)
-        if orderBy is not None:
-            return new.orderBy(orderBy)
-        return new
+    def union(self, otherSelect, unionAll=False, orderBy=()):
+        result1 = self._without_prejoins(True)._result_set.order_by()
+        result2 = otherSelect._without_prejoins(True)._result_set.order_by()
+        result_set = result1.union(result2, all=unionAll)
+        return self._copy(
+            prepared_result_set=result_set, distinct=False, orderBy=orderBy)
 
-    def except_(self, otherSelect, exceptAll=False, orderBy=None):
-        result_set = self._result_set.difference(otherSelect._result_set,
-                                                 all=exceptAll)
-        result_set.order_by() # Remove default order.
-        new = self.__class__(result_set, self._cls)
-        if orderBy is not None:
-            return new.orderBy(orderBy)
-        return new
+    def except_(self, otherSelect, exceptAll=False, orderBy=()):
+        result1 = self._without_prejoins(True)._result_set.order_by()
+        result2 = otherSelect._without_prejoins(True)._result_set.order_by()
+        result_set = result1.difference(result2, all=exceptAll)
+        return self._copy(
+            prepared_result_set=result_set, distinct=False, orderBy=orderBy)
 
-    def intersect(self, otherSelect, intersectAll=False, orderBy=None):
-        result_set = self._result_set.intersection(otherSelect._result_set,
-                                                   all=intersectAll)
-        new = self.__class__(result_set, self._cls)
-        if orderBy is not None:
-            return new.orderBy(orderBy)
-        return new
+    def intersect(self, otherSelect, intersectAll=False, orderBy=()):
+        result1 = self._without_prejoins(True)._result_set.order_by()
+        result2 = otherSelect._without_prejoins(True)._result_set.order_by()
+        result_set = result1.intersection(result2, all=intersectAll)
+        return self._copy(
+            prepared_result_set=result_set, distinct=False, orderBy=orderBy)
 
     def prejoin(self, prejoins):
-        return self
+        return self._copy(prejoins=prejoins)
 
     def prejoinClauseTables(self, prejoinClauseTables):
-        return self
+        return self._copy(prejoinClauseTables=prejoinClauseTables)
+
+    def sum(self, attribute):
+        if isinstance(attribute, basestring):
+            attribute = SQL(attribute)
+        result_set = self._without_prejoins()._result_set
+        return result_set.sum(attribute)
+
+
+def detuplelize(item):
+    """If item is a tuple, return first element, otherwise the item itself.
+
+    The tuple syntax is used to implement prejoins, so we have to hide from
+    the user the fact that more than a single object are being selected at
+    once.
+    """
+    if type(item) is tuple:
+        return item[0]
+    return item
+
+def join_aliased_relation(local_cls, remote_cls, relation):
+    """Build a join expression between local_cls and remote_cls.
+
+    This is equivalent to relation.get_where_for_join(), except that
+    the join expression is changed to be relative to the given
+    local_cls and remote_cls (which may be aliases).
+
+    The result is the join expression.
+    """
+    remote_key = tuple(Column(column.name, remote_cls)
+                       for column in relation.remote_key)
+    local_key = tuple(Column(column.name, local_cls)
+                      for column in relation.local_key)
+    return compare_columns(local_key, remote_key)
+
 
 
 class PropertyAdapter(object):
@@ -426,7 +644,7 @@ class PropertyAdapter(object):
     def __init__(self, dbName=None, notNull=False, default=Undef,
                  alternateID=None, unique=_IGNORED, name=_IGNORED,
                  alternateMethodName=None, length=_IGNORED, immutable=None,
-                 prejoins=_IGNORED):
+                 storm_validator=None):
         if default is None and notNull:
             raise RuntimeError("Can't use default=None and notNull=True")
 
@@ -443,7 +661,6 @@ class PropertyAdapter(object):
         #   - unique (for tablebuilder)
         #   - length (for tablebuilder for StringCol)
         #   - name (for _columns stuff)
-        #   - prejoins
 
         if callable(default):
             default_factory = default
@@ -452,11 +669,14 @@ class PropertyAdapter(object):
             default_factory = Undef
         super(PropertyAdapter, self).__init__(dbName, allow_none=not notNull,
                                               default_factory=default_factory,
-                                              default=default, **self._kwargs)
+                                              default=default,
+                                              validator=storm_validator,
+                                              **self._kwargs)
 
 
 class AutoUnicodeVariable(Variable):
     """Unlike UnicodeVariable, this will try to convert str to unicode."""
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if not isinstance(value, basestring):
@@ -500,7 +720,7 @@ class SQLMultipleJoin(ReferenceSet):
 
     def __init__(self, otherClass=None, joinColumn=None,
                  intermediateTable=None, otherColumn=None, orderBy=None,
-                 prejoins=_IGNORED):
+                 prejoins=None):
         if intermediateTable:
             args = ("<primary key>",
                     "%s.%s" % (intermediateTable, joinColumn),
@@ -510,18 +730,33 @@ class SQLMultipleJoin(ReferenceSet):
             args = ("<primary key>", "%s.%s" % (otherClass, joinColumn))
         ReferenceSet.__init__(self, *args)
         self._orderBy = orderBy
+        self._otherClass = otherClass
+        self._prejoins = prejoins
 
     def __get__(self, obj, cls=None):
         if obj is None:
             return self
         bound_reference_set = ReferenceSet.__get__(self, obj)
         target_cls = bound_reference_set._target_cls
-        result_set = bound_reference_set.find()
-        if self._orderBy:
-            result_set.order_by(*target_cls._parse_orderBy(self._orderBy))
-        return SQLObjectResultSet(result_set, target_cls)
+        where_clause = bound_reference_set._get_where_clause()
+        return SQLObjectResultSet(target_cls, where_clause,
+                                  orderBy=self._orderBy,
+                                  prejoins=self._prejoins)
+
+    def _get_bound_reference_set(self, obj):
+        assert obj is not None
+        return ReferenceSet.__get__(self, obj)
+
 
 SQLRelatedJoin = SQLMultipleJoin
+
+
+class SingleJoin(Reference):
+
+    def __init__(self, otherClass, joinColumn, prejoins=_IGNORED):
+        super(SingleJoin, self).__init__(
+            "<primary key>", "%s.%s" % (otherClass, joinColumn),
+            on_remote=True)
 
 
 class CONTAINSSTRING(Like):

@@ -1,6 +1,42 @@
-IcepapCMS 1.23 2010/mm/dd
+IcepapCMS 2.0 2014/xx/xx
 -------------------------------------------------------------------------
-+)
+
+
+IcepapCMS 1.29 2014/02/26
+IcepapCMS 1.26 2014/02/26
+-------------------------------------------------------------------------
++) ISSUE 068 Better IcepapCMS starting time.
++) ISSUE 068 Upgrade to storm to 0.20
++) ISSUE 070 Added LNKNAME option in INDEXER command, and command disabled
++) ISSUE 065 Removed forced uppercase driver name and lnkname
++) ISSUE 055 Catalog template management available for Qt 4.7
++) ISSUE 056 (part) Position control register updated in axis tab
++) ISSUE 056 (part) AbsEnc offset allows negative values
+
+IcepapCMS 1.25 2013/07/11
+-------------------------------------------------------------------------
++) ISG 053: Fixed, new hook available in src/lib_icepapcms/icepapsystem.py method checkAutoSolvedConflict()
++) Catalog search engine uses <space> to join word with an 'OR' operator
++) Added the possibility to edit STRING? param types with a QLineEdit
++) Added _MANUALLY_ 'LINKED' as an 'INDEXER' option, because it is missing in CFGINFO, some day should be removed
+
+IcepapCMS 1.24 2012/11/05
+-------------------------------------------------------------------------
++) ISG 022: Icon in tabs to notify about modified or validate pending parameters
++) ISG 021: Parameter tooltips visible again
++) ISG 010: If driver name contains 'ERROR' change it to ''
++) If driver name has a non-ascii character (exception), continue the loop with the rest of the drivers
++) Fixed bug in doCopy when creating TemporaryFile
+
+
+IcepapCMS 1.23 2011/01/20
+-------------------------------------------------------------------------
++) Solved NEW driver management: leave the system as before if 'Cancel'
++) CONFIG mode only while configuring driver: Send clicked and Save pending
++) 'SAVE' button only when 'SEND' is done (send pending to be committed)
++) Exit application dialog message changed sign word for validate
++) Save config button text changed to 'Validate Config'
++) Bug solved, when exiting the application if discarding changes restore config
 
 IcepapCMS 1.22 2010/08/24
 -------------------------------------------------------------------------

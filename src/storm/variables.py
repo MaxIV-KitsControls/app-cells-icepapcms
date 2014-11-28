@@ -21,9 +21,15 @@
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
 import cPickle as pickle
+import re
+try:
+    import uuid
+except ImportError:
+    uuid = None
 
+from storm.compat import json
 from storm.exceptions import NoneError
-from storm import Undef
+from storm import Undef, has_cextensions
 
 
 __all__ = [
@@ -41,13 +47,16 @@ __all__ = [
     "TimeVariable",
     "TimeDeltaVariable",
     "EnumVariable",
+    "UUIDVariable",
     "PickleVariable",
+    "JSONVariable",
     "ListVariable",
 ]
 
 
 class LazyValue(object):
     """Marker to be used as a base class on lazily evaluated values."""
+    __slots__ = ()
 
 
 def raise_none_error(column):
@@ -97,12 +106,16 @@ class Variable(object):
     _lazy_value = Undef
     _checkpoint_state = Undef
     _allow_none = True
+    _validator = None
+    _validator_object_factory = None
+    _validator_attribute = None
 
     column = None
     event = None
 
     def __init__(self, value=Undef, value_factory=Undef, from_db=False,
-                 allow_none=True, column=None, event=None):
+                 allow_none=True, column=None, event=None, validator=None,
+                 validator_object_factory=None, validator_attribute=None):
         """
         @param value: The initial value of this variable. The default
             behavior is for the value to stay undefined until it is
@@ -114,6 +127,14 @@ class Variable(object):
             specified.
         @param allow_none: A boolean indicating whether None should be
             allowed to be set as the value of this variable.
+        @param validator: Validation function called whenever trying to
+            set the variable to a non-db value.  The function should
+            look like validator(object, attr, value), where the first and
+            second arguments are the result of validator_object_factory()
+            (or None, if this parameter isn't provided) and the value of
+            validator_attribute, respectively.  When called, the function
+            should raise an error if the value is unacceptable, or return
+            the value to be used in place of the original value otherwise.
         @type column: L{storm.expr.Column}
         @param column: The column that this variable represents. It's
             used for reporting better error messages.
@@ -127,6 +148,10 @@ class Variable(object):
             self.set(value, from_db)
         elif value_factory is not Undef:
             self.set(value_factory(), from_db)
+        if validator is not None:
+            self._validator = validator
+            self._validator_object_factory = validator_object_factory
+            self._validator_attribute = validator_attribute
         self.column = column
         self.event = event
 
@@ -180,8 +205,14 @@ class Variable(object):
 
         if isinstance(value, LazyValue):
             self._lazy_value = value
-            new_value = Undef
+            self._checkpoint_state = new_value = Undef
         else:
+            if not from_db and self._validator is not None:
+                # We use a factory rather than the object itself to prevent
+                # the cycle object => obj_info => variable => object
+                value = self._validator(self._validator_object_factory and
+                                        self._validator_object_factory(),
+                                        self._validator_attribute, value)
             self._lazy_value = Undef
             if value is None:
                 if self._allow_none is False:
@@ -261,15 +292,6 @@ class Variable(object):
         variable.set_state(self.get_state())
         return variable
 
-    def __eq__(self, other):
-        """Equality based on current value, not identity."""
-        return (self.__class__ is other.__class__ and
-                self._value == other._value)
-
-    def __hash__(self):
-        """Hash based on current value, not identity."""
-        return hash(self._value)
-
     def parse_get(self, value, to_db):
         """Convert the internal value to an external value.
 
@@ -299,14 +321,12 @@ class Variable(object):
         return value
 
 
-try:
+if has_cextensions:
     from storm.cextensions import Variable
-except ImportError, e:
-    if "cextensions" not in str(e):
-        raise
 
 
 class BoolVariable(Variable):
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if not isinstance(value, (int, long, float, Decimal)):
@@ -316,6 +336,7 @@ class BoolVariable(Variable):
 
 
 class IntVariable(Variable):
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if not isinstance(value, (int, long, float, Decimal)):
@@ -325,6 +346,7 @@ class IntVariable(Variable):
 
 
 class FloatVariable(Variable):
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if not isinstance(value, (int, long, float, Decimal)):
@@ -334,6 +356,7 @@ class FloatVariable(Variable):
 
 
 class DecimalVariable(Variable):
+    __slots__ = ()
 
     @staticmethod
     def parse_set(value, from_db):
@@ -348,11 +371,12 @@ class DecimalVariable(Variable):
     @staticmethod
     def parse_get(value, to_db):
         if to_db:
-            return str(value)
+            return unicode(value)
         return value
 
 
 class RawStrVariable(Variable):
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if isinstance(value, buffer):
@@ -364,6 +388,7 @@ class RawStrVariable(Variable):
 
 
 class UnicodeVariable(Variable):
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if not isinstance(value, unicode):
@@ -373,6 +398,7 @@ class UnicodeVariable(Variable):
 
 
 class DateTimeVariable(Variable):
+    __slots__ = ("_tzinfo",)
 
     def __init__(self, *args, **kwargs):
         self._tzinfo = kwargs.pop("tzinfo", None)
@@ -406,11 +432,14 @@ class DateTimeVariable(Variable):
 
 
 class DateVariable(Variable):
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if from_db:
             if value is None:
                 return None
+            if isinstance(value, datetime):
+                return value.date()
             if isinstance(value, date):
                 return value
             if not isinstance(value, (str, unicode)):
@@ -427,6 +456,7 @@ class DateVariable(Variable):
 
 
 class TimeVariable(Variable):
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if from_db:
@@ -449,6 +479,7 @@ class TimeVariable(Variable):
 
 
 class TimeDeltaVariable(Variable):
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if from_db:
@@ -459,22 +490,33 @@ class TimeDeltaVariable(Variable):
                 return value
             if not isinstance(value, (str, unicode)):
                 raise TypeError("Expected timedelta, found %s" % repr(value))
-            (years, months, days,
-             hours, minutes, seconds, microseconds) = _parse_interval(value)
-            if years != 0:
-                raise ValueError("Can not handle year intervals")
-            if months != 0:
-                raise ValueError("Can not handle month intervals")
-            return timedelta(days=days, hours=hours,
-                             minutes=minutes, seconds=seconds,
-                             microseconds=microseconds)
+            return _parse_interval(value)
         else:
             if not isinstance(value, timedelta):
                 raise TypeError("Expected timedelta, found %s" % repr(value))
             return value
 
 
+class UUIDVariable(Variable):
+    __slots__ = ()
+
+    def parse_set(self, value, from_db):
+        assert uuid is not None, "The uuid module was not found."
+        if from_db and isinstance(value, basestring):
+            value = uuid.UUID(value)
+        elif not isinstance(value, uuid.UUID):
+            raise TypeError("Expected UUID, found %r: %r"
+                            % (type(value), value))
+        return value
+
+    def parse_get(self, value, to_db):
+        if to_db:
+            return unicode(value)
+        return value
+
+
 class EnumVariable(Variable):
+    __slots__ = ("_get_map", "_set_map")
 
     def __init__(self, get_map, set_map, *args, **kwargs):
         self._get_map = get_map
@@ -498,58 +540,123 @@ class EnumVariable(Variable):
             raise ValueError("Invalid enum value: %s" % repr(value))
 
 
-class PickleVariable(Variable):
+class MutableValueVariable(Variable):
+    """
+    A variable which contains a reference to mutable content. For this kind
+    of variable, we can't simply detect when a modification has been made, so
+    we have to synchronize the content of the variable when the store is
+    flushing current objects, to check if the state has changed.
+    """
+    __slots__ = ("_event_system")
 
     def __init__(self, *args, **kwargs):
+        self._event_system = None
         Variable.__init__(self, *args, **kwargs)
-        if self.event:
-            self.event.hook("flush", self._detect_changes)
-            self.event.hook("object-deleted", self._detect_changes)
+        if self.event is not None:
+            self.event.hook("start-tracking-changes", self._start_tracking)
+            self.event.hook("object-deleted", self._detect_changes_and_stop)
+
+    def _start_tracking(self, obj_info, event_system):
+        self._event_system = event_system
+        self.event.hook("stop-tracking-changes", self._stop_tracking)
+
+    def _stop_tracking(self, obj_info, event_system):
+        event_system.unhook("flush", self._detect_changes)
+        self._event_system = None
 
     def _detect_changes(self, obj_info):
-        if self.get_state() != self._checkpoint_state:
+        if (self._checkpoint_state is not Undef and
+            self.get_state() != self._checkpoint_state):
             self.event.emit("changed", self, None, self._value, False)
+
+    def _detect_changes_and_stop(self, obj_info):
+        self._detect_changes(obj_info)
+        if self._event_system is not None:
+            self._stop_tracking(obj_info, self._event_system)
+
+    def get(self, default=None, to_db=False):
+        if self._event_system is not None:
+            self._event_system.hook("flush", self._detect_changes)
+        return super(MutableValueVariable, self).get(default, to_db)
+
+    def set(self, value, from_db=False):
+        if self._event_system is not None:
+            if isinstance(value, LazyValue):
+                self._event_system.unhook("flush", self._detect_changes)
+            else:
+                self._event_system.hook("flush", self._detect_changes)
+        super(MutableValueVariable, self).set(value, from_db)
+
+
+class EncodedValueVariable(MutableValueVariable):
+
+    __slots__ = ()
 
     def parse_set(self, value, from_db):
         if from_db:
             if isinstance(value, buffer):
                 value = str(value)
-            return pickle.loads(value)
+            return self._loads(value)
         else:
             return value
 
     def parse_get(self, value, to_db):
         if to_db:
-            return pickle.dumps(value, -1)
+            return self._dumps(value)
         else:
             return value
 
     def get_state(self):
-        return (self._lazy_value, pickle.dumps(self._value, -1))
+        return (self._lazy_value, self._dumps(self._value))
 
     def set_state(self, state):
         self._lazy_value = state[0]
-        self._value = pickle.loads(state[1])
-
-    def __hash__(self):
-        try:
-            return hash(self._value)
-        except TypeError:
-            return hash(pickle.dumps(self._value, -1))
+        self._value = self._loads(state[1])
 
 
-class ListVariable(Variable):
+class PickleVariable(EncodedValueVariable):
+
+    def _loads(self, value):
+        return pickle.loads(value)
+
+    def _dumps(self, value):
+        return pickle.dumps(value, -1)
+
+
+class JSONVariable(EncodedValueVariable):
+
+    __slots__ = ()
+
+    def __init__(self, *args, **kwargs):
+        assert json is not None, (
+            "Neither the json nor the simplejson module was found.")
+        super(JSONVariable, self).__init__(*args, **kwargs)
+
+    def _loads(self, value):
+        if not isinstance(value, unicode):
+            raise TypeError(
+                "Cannot safely assume encoding of byte string %r." % value)
+        return json.loads(value)
+
+    def _dumps(self, value):
+        # http://www.ietf.org/rfc/rfc4627.txt states that JSON is text-based
+        # and so we treat it as such here. In other words, this method returns
+        # unicode and never str.
+        dump = json.dumps(value, ensure_ascii=False)
+        if not isinstance(dump, unicode):
+            # json.dumps() does not always return unicode. See
+            # http://code.google.com/p/simplejson/issues/detail?id=40 for one
+            # of many discussions of str/unicode handling in simplejson.
+            dump = dump.decode("utf-8")
+        return dump
+
+
+class ListVariable(MutableValueVariable):
+    __slots__ = ("_item_factory",)
 
     def __init__(self, item_factory, *args, **kwargs):
         self._item_factory = item_factory
-        Variable.__init__(self, *args, **kwargs)
-        if self.event:
-            self.event.hook("flush", self._detect_changes)
-            self.event.hook("object-deleted", self._detect_changes)
-
-    def _detect_changes(self, obj_info):
-        if self.get_state() != self._checkpoint_state:
-            self.event.emit("changed", self, None, self._value, False)
+        MutableValueVariable.__init__(self, *args, **kwargs)
 
     def parse_set(self, value, from_db):
         if from_db:
@@ -562,8 +669,7 @@ class ListVariable(Variable):
     def parse_get(self, value, to_db):
         if to_db:
             item_factory = self._item_factory
-            # XXX This from_db=to_db is dubious. What to do here?
-            return [item_factory(value=val, from_db=to_db) for val in value]
+            return [item_factory(value=val, from_db=False) for val in value]
         else:
             return value
 
@@ -574,15 +680,17 @@ class ListVariable(Variable):
         self._lazy_value = state[0]
         self._value = pickle.loads(state[1])
 
-    def __hash__(self):
-        return hash(pickle.dumps(self._value, -1))
-
 
 def _parse_time(time_str):
     # TODO Add support for timezones.
-    if ":" not in time_str:
+    colons = time_str.count(":")
+    if not 1 <= colons <= 2:
         raise ValueError("Unknown time format: %r" % time_str)
-    hour, minute, second = time_str.split(":")
+    if colons == 2:
+        hour, minute, second = time_str.split(":")
+    else:
+        hour, minute = time_str.split(":")
+        second = "0"
     if "." in second:
         second, microsecond = second.split(".")
         second = int(second)
@@ -596,61 +704,53 @@ def _parse_date(date_str):
     year, month, day = date_str.split("-")
     return int(year), int(month), int(day)
 
-# XXX: 20070208 jamesh
-# The function below comes from psycopgda.adapter, which is licensed
-# under the ZPL.  Depending on Storm licensing, we may need to replace
-# it.
-def _parse_interval(interval_str):
-    """Parses PostgreSQL interval notation and returns a tuple (years, months,
-    days, hours, minutes, seconds).
 
-    Values accepted::
-        interval  ::= date
-                   |  time
-                   |  date time
-        date      ::= date_comp
-                   |  date date_comp
-        date_comp ::= 1 'day'
-                   |  number 'days'
-                   |  1 'month'
-                   |  1 'mon'
-                   |  number 'months'
-                   |  number 'mons'
-                   |  1 'year'
-                   |  number 'years'
-        time      ::= number ':' number
-                   |  number ':' number ':' number
-                   |  number ':' number ':' number '.' fraction
-    """
-    years = months = days = 0
-    hours = minutes = seconds = microseconds = 0
-    elements = interval_str.split()
-    # Tests with 7.4.6 on Ubuntu 5.4 interval output returns 'mon' and 'mons'
-    # and not 'month' or 'months' as expected. I've fixed this and left
-    # the original matches there too in case this is dependant on
-    # OS or PostgreSQL release.
-    for i in range(0, len(elements) - 1, 2):
-        count, unit = elements[i:i+2]
-        if unit.endswith(','):
-            unit = unit[:-1]
-        if unit == 'day' and count == '1':
-            days += 1
-        elif unit == 'days':
-            days += int(count)
-        elif unit == 'month' and count == '1':
-            months += 1
-        elif unit == 'mon' and count == '1':
-            months += 1
-        elif unit == 'months':
-            months += int(count)
-        elif unit == 'mons':
-            months += int(count)
-        elif unit == 'year' and count == '1':
-            years += 1
-        elif unit == 'years':
-            years += int(count)
+def _parse_interval_table():
+    table = {}
+    for units, delta in (
+        ("d day days", timedelta),
+        ("h hour hours", lambda x: timedelta(hours=x)),
+        ("m min minute minutes", lambda x: timedelta(minutes=x)),
+        ("s sec second seconds", lambda x: timedelta(seconds=x)),
+        ("ms millisecond milliseconds", lambda x: timedelta(milliseconds=x)),
+        ("microsecond microseconds", lambda x: timedelta(microseconds=x))
+        ):
+        for unit in units.split():
+            table[unit] = delta
+    return table
+
+_parse_interval_table = _parse_interval_table()
+
+_parse_interval_re = re.compile(r"[\s,]*"
+                                r"([-+]?(?:\d\d?:\d\d?(?::\d\d?)?(?:\.\d+)?"
+                                r"|\d+(?:\.\d+)?))"
+                                r"[\s,]*")
+
+def _parse_interval(interval):
+    result = timedelta(0)
+    value = None
+    for token in _parse_interval_re.split(interval):
+        if not token:
+            pass
+        elif ":" in token:
+            if value is not None:
+                result += timedelta(days=value)
+                value = None
+            h, m, s, ms = _parse_time(token)
+            result += timedelta(hours=h, minutes=m, seconds=s, microseconds=ms)
+        elif value is None:
+            try:
+                value = float(token)
+            except ValueError:
+                raise ValueError("Expected an interval value rather than "
+                                 "%r in interval %r" % (token, interval))
         else:
-            raise ValueError, 'unknown time interval %s %s' % (count, unit)
-    if len(elements) % 2 == 1:
-        hours, minutes, seconds, microseconds = _parse_time(elements[-1])
-    return (years, months, days, hours, minutes, seconds, microseconds)
+            unit = _parse_interval_table.get(token)
+            if unit is None:
+                raise ValueError("Unsupported interval unit %r in interval %r"
+                                 % (token, interval))
+            result += unit(value)
+            value = None
+    if value is not None:
+        result += timedelta(seconds=value)
+    return result

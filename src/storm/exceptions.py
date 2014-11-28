@@ -113,10 +113,33 @@ class NotSupportedError(DatabaseError):
     pass
 
 
+class DisconnectionError(OperationalError):
+    pass
+
+
+class TimeoutError(StormError):
+    """Raised by timeout tracers when remining time is over."""
+
+    def __init__(self, statement, params, message=None):
+        self.statement = statement
+        self.params = params
+        self.message = message
+
+    def __str__(self):
+	return ', '.join(
+            [repr(element) for element in
+             (self.message, self.statement, self.params)
+             if element is not None])
+
+
+class ConnectionBlockedError(StormError):
+    """Raised when an attempt is made to use a blocked connection."""
+
+
 def install_exceptions(module):
     for exception in (Error, Warning, DatabaseError, InternalError,
                       OperationalError, ProgrammingError, IntegrityError,
-                      DataError, NotSupportedError):
+                      DataError, NotSupportedError, InterfaceError):
         module_exception = getattr(module, exception.__name__, None)
         if module_exception is not None:
             module_exception.__bases__ += (exception,)

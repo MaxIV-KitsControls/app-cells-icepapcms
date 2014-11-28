@@ -40,7 +40,3 @@ class Dummy(object):
         return False
 
 dummy = Dummy()
-
-from mysql import *
-from postgres import *
-from sqlite import *

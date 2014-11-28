@@ -26,8 +26,13 @@ supported in modules in L{storm.databases}.
 """
 
 from storm.expr import Expr, State, compile
+# Circular import: imported at the end of the module.
+# from storm.tracer import trace
 from storm.variables import Variable
-from storm.exceptions import ClosedError
+from storm.xid import Xid
+from storm.exceptions import (
+    ClosedError, ConnectionBlockedError, DatabaseError, DisconnectionError,
+    Error, ProgrammingError)
 from storm.uri import URI
 import storm
 
@@ -36,7 +41,9 @@ __all__ = ["Database", "Connection", "Result",
            "convert_param_marks", "create_database", "register_scheme"]
 
 
-DEBUG = False
+STATE_CONNECTED = 1
+STATE_DISCONNECTED = 2
+STATE_RECONNECT = 3
 
 
 class Result(object):
@@ -72,9 +79,12 @@ class Result(object):
         The result will be converted to an appropriate format via
         L{from_database}.
 
+        @raise DisconnectionError: Raised when the connection is lost.
+            Reconnection happens automatically on rollback.
+
         @return: A converted row or None, if no data is left.
         """
-        row = self._raw_cursor.fetchone()
+        row = self._connection._check_disconnect(self._raw_cursor.fetchone)
         if row is not None:
             return tuple(self.from_database(row))
         return None
@@ -84,8 +94,11 @@ class Result(object):
 
         The results will be converted to an appropriate format via
         L{from_database}.
+
+        @raise DisconnectionError: Raised when the connection is lost.
+            Reconnection happens automatically on rollback.
         """
-        result = self._raw_cursor.fetchall()
+        result = self._connection._check_disconnect(self._raw_cursor.fetchall)
         if result:
             return [tuple(self.from_database(row)) for row in result]
         return result
@@ -95,13 +108,30 @@ class Result(object):
 
         The results will be converted to an appropriate format via
         L{from_database}.
+
+        @raise DisconnectionError: Raised when the connection is lost.
+            Reconnection happens automatically on rollback.
         """
         while True:
-            results = self._raw_cursor.fetchmany()
+            results = self._connection._check_disconnect(
+                self._raw_cursor.fetchmany)
             if not results:
                 break
             for result in results:
                 yield tuple(self.from_database(result))
+
+    @property
+    def rowcount(self):
+        """
+        See PEP 249 for further details on rowcount.
+
+        @return: the number of affected rows, or None if the database
+            backend does not provide this information. Return value
+            is undefined if all results have not yet been retrieved.
+        """
+        if self._raw_cursor.rowcount == -1:
+            return None
+        return self._raw_cursor.rowcount
 
     def get_insert_identity(self, primary_columns, primary_variables):
         """Get a query which will return the row that was just inserted.
@@ -146,11 +176,16 @@ class Connection(object):
     param_mark = "?"
     compile = compile
 
+    _blocked = False
     _closed = False
+    _two_phase_transaction = False  # If True, a two-phase transaction has
+                                    # been started with begin()
+    _state = STATE_CONNECTED
 
-    def __init__(self, database, raw_connection):
+    def __init__(self, database, event=None):
         self._database = database # Ensures deallocation order.
-        self._raw_connection = raw_connection
+        self._event = event
+        self._raw_connection = self._database.raw_connect()
 
     def __del__(self):
         """Close the connection."""
@@ -158,6 +193,20 @@ class Connection(object):
             self.close()
         except:
             pass
+
+    def block_access(self):
+        """Block access to the connection.
+
+        Attempts to execute statements or commit a transaction will
+        result in a C{ConnectionBlockedError} exception.  Rollbacks
+        are permitted as that operation is often used in case of
+        failures.
+        """
+        self._blocked = True
+
+    def unblock_access(self):
+        """Unblock access to the connection."""
+        self._blocked = False
 
     def execute(self, statement, params=None, noresult=False):
         """Execute a statement with the given parameters.
@@ -167,11 +216,21 @@ class Connection(object):
             compiled if necessary.
         @param noresult: If True, no result will be returned.
 
+        @raise ConnectionBlockedError: Raised if access to the connection
+            has been blocked with L{block_access}.
+        @raise DisconnectionError: Raised when the connection is lost.
+            Reconnection happens automatically on rollback.
+
         @return: The result of C{self.result_factory}, or None if
             C{noresult} is True.
         """
         if self._closed:
             raise ClosedError("Connection is closed")
+        if self._blocked:
+            raise ConnectionBlockedError("Access to connection is blocked")
+        if self._event:
+            self._event.emit("register-transaction")
+        self._ensure_connected()
         if isinstance(statement, Expr):
             if params is not None:
                 raise ValueError("Can't pass parameters with expressions")
@@ -181,7 +240,7 @@ class Connection(object):
         statement = convert_param_marks(statement, "?", self.param_mark)
         raw_cursor = self.raw_execute(statement, params)
         if noresult:
-            raw_cursor.close()
+            self._check_disconnect(raw_cursor.close)
             return None
         return self.result_factory(self, raw_cursor)
 
@@ -189,16 +248,90 @@ class Connection(object):
         """Close the connection if it is not already closed."""
         if not self._closed:
             self._closed = True
-            self._raw_connection.close()
-            self._raw_connection = None
+            if self._raw_connection is not None:
+                self._raw_connection.close()
+                self._raw_connection = None
 
-    def commit(self):
-        """Commit the connection."""
-        self._raw_connection.commit()
+    def begin(self, xid):
+        """Begin a two-phase transaction."""
+        if self._two_phase_transaction:
+            raise ProgrammingError("begin cannot be used inside a transaction")
+        self._ensure_connected()
+        raw_xid = self._raw_xid(xid)
+        self._check_disconnect(self._raw_connection.tpc_begin, raw_xid)
+        self._two_phase_transaction = True
 
-    def rollback(self):
-        """Rollback the connection."""
-        self._raw_connection.rollback()
+    def prepare(self):
+        """Run the prepare phase of a two-phase transaction."""
+        if not self._two_phase_transaction:
+            raise ProgrammingError("prepare must be called inside a two-phase "
+                                   "transaction")
+        self._check_disconnect(self._raw_connection.tpc_prepare)
+
+    def commit(self, xid=None):
+        """Commit the connection.
+
+        @param xid: Optionally the L{Xid} of a previously prepared
+             transaction to commit. This form should be called outside
+             of a transaction, and is intended for use in recovery.
+
+        @raise ConnectionBlockedError: Raised if access to the connection
+            has been blocked with L{block_access}.
+        @raise DisconnectionError: Raised when the connection is lost.
+            Reconnection happens automatically on rollback.
+
+        """
+        try:
+            self._ensure_connected()
+            if xid:
+                raw_xid = self._raw_xid(xid)
+                self._check_disconnect(self._raw_connection.tpc_commit, raw_xid)
+            elif self._two_phase_transaction:
+                self._check_disconnect(self._raw_connection.tpc_commit)
+                self._two_phase_transaction = False
+            else:
+                self._check_disconnect(self._raw_connection.commit)
+        finally:
+            self._check_disconnect(trace, "connection_commit", self, xid)
+
+    def recover(self):
+        """Return a list of L{Xid}s representing pending transactions."""
+        self._ensure_connected()
+        raw_xids = self._check_disconnect(self._raw_connection.tpc_recover)
+        return [Xid(raw_xid[0], raw_xid[1], raw_xid[2])
+                for raw_xid in raw_xids]
+
+    def rollback(self, xid=None):
+        """Rollback the connection.
+
+        @param xid: Optionally the L{Xid} of a previously prepared
+             transaction to rollback. This form should be called outside
+             of a transaction, and is intended for use in recovery.
+        """
+        try:
+            if self._state == STATE_CONNECTED:
+                try:
+                    if xid:
+                        raw_xid = self._raw_xid(xid)
+                        self._raw_connection.tpc_rollback(raw_xid)
+                    elif self._two_phase_transaction:
+                        self._raw_connection.tpc_rollback()
+                    else:
+                        self._raw_connection.rollback()
+                except Error, exc:
+                    if self.is_disconnection_error(exc):
+                        self._raw_connection = None
+                        self._state = STATE_RECONNECT
+                        self._two_phase_transaction = False
+                    else:
+                        raise
+                else:
+                    self._two_phase_transaction = False
+            else:
+                self._two_phase_transaction = False
+                self._state = STATE_RECONNECT
+        finally:
+            self._check_disconnect(trace, "connection_rollback", self, xid)
 
     @staticmethod
     def to_database(params):
@@ -235,17 +368,97 @@ class Connection(object):
 
         @return: The dbapi cursor object, as fetched from L{build_raw_cursor}.
         """
-        raw_cursor = self.build_raw_cursor()
-        if not params:
-            if DEBUG:
-                print statement, ()
-            raw_cursor.execute(statement)
-        else:
-            params = tuple(self.to_database(params))
-            if DEBUG:
-                print statement, params
-            raw_cursor.execute(statement, params)
+        raw_cursor = self._check_disconnect(self.build_raw_cursor)
+        self._prepare_execution(raw_cursor, params, statement)
+        args = self._execution_args(params, statement)
+        self._run_execution(raw_cursor, args, params, statement)
         return raw_cursor
+
+    def _execution_args(self, params, statement):
+        """Get the appropriate statement execution arguments."""
+        if params:
+            args = (statement, tuple(self.to_database(params)))
+        else:
+            args = (statement,)
+        return args
+
+    def _run_execution(self, raw_cursor, args, params, statement):
+        """Complete the statement execution, along with result reports."""
+        try:
+            self._check_disconnect(raw_cursor.execute, *args)
+        except Exception, error:
+            self._check_disconnect(
+                trace, "connection_raw_execute_error", self, raw_cursor,
+                statement, params or (), error)
+            raise
+        else:
+            self._check_disconnect(
+                trace, "connection_raw_execute_success", self, raw_cursor,
+                statement, params or ())
+
+    def _prepare_execution(self, raw_cursor, params, statement):
+        """Prepare the statement execution to be run."""
+        try:
+            self._check_disconnect(
+                trace, "connection_raw_execute", self, raw_cursor,
+                statement, params or ())
+        except Exception, error:
+            self._check_disconnect(
+                trace, "connection_raw_execute_error", self, raw_cursor,
+                statement, params or (), error)
+            raise
+
+    def _ensure_connected(self):
+        """Ensure that we are connected to the database.
+
+        If the connection is marked as dead, or if we can't reconnect,
+        then raise DisconnectionError.
+        """
+        if self._blocked:
+            raise ConnectionBlockedError("Access to connection is blocked")
+        if self._state == STATE_CONNECTED:
+            return
+        elif self._state == STATE_DISCONNECTED:
+            raise DisconnectionError("Already disconnected")
+        elif self._state == STATE_RECONNECT:
+            try:
+                self._raw_connection = self._database.raw_connect()
+            except DatabaseError, exc:
+                self._state = STATE_DISCONNECTED
+                self._raw_connection = None
+                raise DisconnectionError(str(exc))
+            else:
+                self._state = STATE_CONNECTED
+
+    def is_disconnection_error(self, exc, extra_disconnection_errors=()):
+        """Check whether an exception represents a database disconnection.
+
+        This should be overridden by backends to detect whichever
+        exception values are used to represent this condition.
+        """
+        return False
+
+    def _raw_xid(self, xid):
+        """Return a raw xid from the given high-level L{Xid} object."""
+        return self._raw_connection.xid(xid.format_id,
+                                        xid.global_transaction_id,
+                                        xid.branch_qualifier)
+
+    def _check_disconnect(self, function, *args, **kwargs):
+        """Run the given function, checking for database disconnections."""
+        # Allow the caller to specify additional exception types that
+        # should be treated as possible disconnection errors.
+        extra_disconnection_errors = kwargs.pop(
+            'extra_disconnection_errors', ())
+        try:
+            return function(*args, **kwargs)
+        except Exception, exc:
+            if self.is_disconnection_error(exc, extra_disconnection_errors):
+                self._state = STATE_DISCONNECTED
+                self._raw_connection = None
+                raise DisconnectionError(str(exc))
+            else:
+                raise
 
     def preset_primary_key(self, primary_columns, primary_variables):
         """Process primary variables before an insert happens.
@@ -261,20 +474,32 @@ class Database(object):
     This should be subclassed for individual database backends.
 
     @cvar connection_factory: A callable which will take this database
-        and a raw connection and should return an instance of
-        L{Connection}.
+        and should return an instance of L{Connection}.
     """
 
     connection_factory = Connection
 
-    def connect(self):
+    def connect(self, event=None):
         """Create a connection to the database.
 
-        This should be overriden in subclasses to do any
-        database-specific connection setup. It should call
-        C{self.connection_factory} to allow for ease of customization.
+        It calls C{self.connection_factory} to allow for ease of
+        customization.
+
+        @param event: The event system to broadcast messages with. If
+            not specified, then no events will be broadcast.
 
         @return: An instance of L{Connection}.
+        """
+        return self.connection_factory(self, event)
+
+    def raw_connect(self):
+        """Create a raw database connection.
+
+        This is used by L{Connection} objects to connect to the
+        database.  It should be overriden in subclasses to do any
+        database-specific connection setup.
+
+        @return: A DB-API connection object.
         """
         raise NotImplementedError
 
@@ -321,3 +546,6 @@ def create_database(uri):
                             None, None, [""])
         factory = module.create_from_uri
     return factory(uri)
+
+# Deal with circular import.
+from storm.tracer import trace

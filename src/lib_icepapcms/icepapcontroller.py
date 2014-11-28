@@ -28,7 +28,7 @@ class IcepapController(Singleton):
         self.iPaps = {}
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
-        self.config_template = path+'/../share/icepapcms/templates/driverparameters.xml'
+        self.config_template = path+'/templates/driverparameters.xml'
         self._parseDriverTemplateFile()
         self._config = ConfigManager()
         self.icepap_cfginfos = {}
@@ -138,7 +138,13 @@ class IcepapController(Singleton):
         ipap_name = self.iPaps[icepap_name].getName(driver_addr)
         driver_cfg.setParameter(unicode("VER"), ver)
         driver_cfg.setParameter(unicode("ID"), ipap_id)
-        driver_cfg.setParameter(unicode("IPAPNAME"), ipap_name)
+        try:
+            driver_cfg.setParameter(unicode("IPAPNAME"), ipap_name)
+        except Exception,e:
+            print 'Exception when trying to read the driver name (%s):' % ipap_name
+            print e
+            ipap_name = 'NON-ASCII_NAME'
+            driver_cfg.setParameter(unicode("IPAPNAME"), ipap_name)
         
         # INSTEAD OF READING PARAM BY PARAM, WE SHOULD ASK THE ICEPAP FOR ALL THE CONFIGURATION
         # WITH THE #N?:CFG COMMAND, USING SOME .getCfg() METHOD.

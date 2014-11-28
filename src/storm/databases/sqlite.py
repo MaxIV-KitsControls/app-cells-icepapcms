@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from time import sleep, time as now
 import sys
 
@@ -48,7 +48,12 @@ compile = compile.create_child()
 @compile.when(Select)
 def compile_select_sqlite(compile, select, state):
     if select.offset is not Undef and select.limit is Undef:
-        select.limit = sys.maxint
+        if sys.platform.startswith('darwin'):
+            # On OS X sqlite doesn't like maxint as LIMIT. See also
+            # https://lists.ubuntu.com/archives/storm/2013-June/001492.html
+            select.limit = sys.maxint - 1
+        else:
+            select.limit = sys.maxint
     statement = compile_select(compile, select, state)
     if state.context is SELECT:
         # SQLite breaks with (SELECT ...) UNION (SELECT ...), so we
@@ -112,7 +117,7 @@ class SQLiteConnection(Connection):
         for param in params:
             if isinstance(param, Variable):
                 param = param.get(to_db=True)
-            if isinstance(param, (datetime, date, time)):
+            if isinstance(param, (datetime, date, time, timedelta)):
                 yield str(param)
             elif isinstance(param, str):
                 yield buffer(param)
@@ -120,18 +125,17 @@ class SQLiteConnection(Connection):
                 yield param
 
     def commit(self):
+        self._ensure_connected()
         # See story at the end to understand why we do COMMIT manually.
         if self._in_transaction:
-            self._in_transaction = False
-            self._raw_connection.execute("COMMIT")
+            self.raw_execute("COMMIT", _end=True)
 
     def rollback(self):
         # See story at the end to understand why we do ROLLBACK manually.
         if self._in_transaction:
-            self._in_transaction = False
-            self._raw_connection.execute("ROLLBACK")
+            self.raw_execute("ROLLBACK", _end=True)
 
-    def raw_execute(self, statement, params=None, _started=None):
+    def raw_execute(self, statement, params=None, _end=False):
         """Execute a raw statement with the given parameters.
 
         This method will automatically retry on locked database errors.
@@ -139,21 +143,33 @@ class SQLiteConnection(Connection):
         versions < 2.3.4, so we make sure the timeout is respected
         here.
         """
-        if not self._in_transaction:
+        if _end:
+            self._in_transaction = False
+        elif not self._in_transaction:
             # See story at the end to understand why we do BEGIN manually.
             self._in_transaction = True
             self._raw_connection.execute("BEGIN")
+
+        # Remember the time at which we started the operation.  If pysqlite
+        # handles the timeout correctly, we won't retry the operation, because
+        # the timeout will have expired when the raw_execute() returns.
+        started = now()
         while True:
             try:
                 return Connection.raw_execute(self, statement, params)
             except sqlite.OperationalError, e:
                 if str(e) != "database is locked":
                     raise
-                if _started is None:
-                    _started = now()
-                elif now() - _started < self._database._timeout:
+                elif now() - started < self._database._timeout:
+                    # pysqlite didn't handle the timeout correctly,
+                    # so we sleep a little and then retry.
                     sleep(0.1)
                 else:
+                    # The operation failed due to being unable to get a
+                    # lock on the database.  In this case, we are still
+                    # in a transaction.
+                    if _end:
+                        self._in_transaction = True
                     raise
 
 
@@ -166,12 +182,27 @@ class SQLite(Database):
             raise DatabaseModuleError("'pysqlite2' module not found")
         self._filename = uri.database or ":memory:"
         self._timeout = float(uri.options.get("timeout", 5))
+        self._synchronous = uri.options.get("synchronous")
+        self._journal_mode = uri.options.get("journal_mode")
+        self._foreign_keys = uri.options.get("foreign_keys")
 
-    def connect(self):
+    def raw_connect(self):
         # See the story at the end to understand why we set isolation_level.
         raw_connection = sqlite.connect(self._filename, timeout=self._timeout,
                                         isolation_level=None)
-        return self.connection_factory(self, raw_connection)
+        if self._synchronous is not None:
+            raw_connection.execute("PRAGMA synchronous = %s" %
+                                   (self._synchronous,))
+
+        if self._journal_mode is not None:
+            raw_connection.execute("PRAGMA journal_mode = %s" %
+                                   (self._journal_mode,))
+
+        if self._foreign_keys is not None:
+            raw_connection.execute("PRAGMA foreign_keys = %s" %
+                                   (self._foreign_keys,))
+
+        return raw_connection
 
 
 create_from_uri = SQLite
@@ -212,3 +243,18 @@ create_from_uri = SQLite
 #     http://www.sqlite.org/lockingv3.html
 #     http://docs.python.org/lib/sqlite3-Controlling-Transactions.html
 #
+
+# --------------------------------------------------------------------
+# Reserved words, SQLite specific
+
+# The list of reserved words here are SQLite specific.  SQL92 reserved words
+# are registered in storm.expr, near the "Reserved words, from SQL1992"
+# comment.  The reserved words here were taken from:
+#
+# http://www.sqlite.org/lang_keywords.html
+compile.add_reserved_words("""
+    abort after analyze attach autoincrement before conflict database detach
+    each exclusive explain fail glob if ignore index indexed instead isnull
+    limit notnull offset plan pragma query raise regexp reindex release
+    rename replace row savepoint temp trigger vacuum virtual
+    """.split())

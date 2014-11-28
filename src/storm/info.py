@@ -21,10 +21,10 @@
 from weakref import ref
 
 from storm.exceptions import ClassInfoError
-from storm.expr import Expr, FromExpr, Column, Desc, TABLE
-from storm.expr import SQLToken, CompileError, compile
+from storm.expr import Column, Desc, TABLE
+from storm.expr import compile, Table
 from storm.event import EventSystem
-from storm import Undef
+from storm import Undef, has_cextensions
 
 
 __all__ = ["get_obj_info", "set_obj_info", "get_cls_info",
@@ -40,8 +40,10 @@ def get_obj_info(obj):
         obj_info = ObjectInfo(obj)
         return obj.__dict__.setdefault("__storm_object_info__", obj_info)
 
+
 def set_obj_info(obj, obj_info):
     obj.__dict__["__storm_object_info__"] = obj_info
+
 
 def get_cls_info(cls):
     if "__storm_class_info__" in cls.__dict__:
@@ -50,6 +52,7 @@ def get_cls_info(cls):
     else:
         cls.__storm_class_info__ = ClassInfo(cls)
         return cls.__storm_class_info__
+
 
 class ClassInfo(dict):
     """Persistent storm-related information of a class.
@@ -70,15 +73,14 @@ class ClassInfo(dict):
 
         self.cls = cls
 
-        if not isinstance(self.table, Expr):
-            self.table = SQLToken(self.table)
+        if isinstance(self.table, basestring):
+            self.table = Table(self.table)
 
         pairs = []
         for attr in dir(cls):
             column = getattr(cls, attr, None)
             if isinstance(column, Column):
                 pairs.append((attr, column))
-
 
         pairs.sort()
 
@@ -121,7 +123,6 @@ class ClassInfo(dict):
         self.primary_key_pos = tuple(id_positions[id(column)]
                                      for column in self.primary_key)
 
-
         __order__ = getattr(cls, "__storm_order__", None)
         if __order__ is None:
             self.default_order = Undef
@@ -151,7 +152,7 @@ class ObjectInfo(dict):
     __hash__ = object.__hash__
 
     # For get_obj_info(), an ObjectInfo is its own obj_info.
-    __storm_object_info__ = property(lambda self:self)
+    __storm_object_info__ = property(lambda self: self)
 
     def __init__(self, obj):
         # FASTPATH This method is part of the fast path.  Be careful when
@@ -167,14 +168,25 @@ class ObjectInfo(dict):
         self.variables = variables = {}
 
         for column in self.cls_info.columns:
-            variables[column] = column.variable_factory(column=column,
-                                                        event=event)
- 
+            variables[column] = \
+                column.variable_factory(column=column,
+                                        event=event,
+                                        validator_object_factory=self.get_obj)
+
         self.primary_vars = tuple(variables[column]
                                   for column in self.cls_info.primary_key)
 
+    def __eq__(self, other):
+        return self is other
+
+    def __ne__(self, other):
+        return self is not other
+
     def set_obj(self, obj):
-        self.get_obj = ref(obj, self._emit_object_deleted)
+        self._ref = ref(obj, self._emit_object_deleted)
+
+    def get_obj(self):
+        return self._ref()
 
     def _emit_object_deleted(self, obj_ref):
         self.event.emit("object-deleted")
@@ -183,37 +195,54 @@ class ObjectInfo(dict):
         for variable in self.variables.itervalues():
             variable.checkpoint()
 
-try:
+
+if has_cextensions:
     from storm.cextensions import ObjectInfo, get_obj_info
-except ImportError, e:
-    if "cextensions" not in str(e):
-        raise
 
 
-class ClassAlias(FromExpr):
+class ClassAlias(object):
+    """Create a named alias for a Storm class for use in queries.
+
+    This is useful basically when the SQL 'AS' feature is desired in code using
+    Storm queries.
+
+    ClassAliases which are explicitly named (i.e., when 'name' is passed) are
+    cached for as long as the class exists, such that the alias returned from
+    C{ClassAlias(Foo, 'foo_alias')} will be the same object no matter how many
+    times it's called.
+
+    @param cls: The class to create the alias of.
+    @param name: If provided, specify the name of the alias to create.
+    """
 
     alias_count = 0
 
     def __new__(self_cls, cls, name=Undef):
         if name is Undef:
+            use_cache = False
             ClassAlias.alias_count += 1
             name = "_%x" % ClassAlias.alias_count
-        cls_info = get_cls_info(cls)
-        alias_cls = type(cls.__name__+"Alias", (cls, self_cls),
+        else:
+            use_cache = True
+            cache = cls.__dict__.get("_storm_alias_cache")
+            if cache is None:
+                cls._storm_alias_cache = {}
+            elif name in cache:
+                return cache[name]
+        alias_cls = type(cls.__name__ + "Alias", (self_cls,),
                          {"__storm_table__": name})
+        alias_cls.__bases__ = (cls, self_cls)
         alias_cls_info = get_cls_info(alias_cls)
         alias_cls_info.cls = cls
+        if use_cache:
+            cls._storm_alias_cache[name] = alias_cls
         return alias_cls
 
 
 @compile.when(type)
 def compile_type(compile, expr, state):
-    table = getattr(expr, "__storm_table__", None)
-    if table is None:
-        raise CompileError("Don't know how to compile %r" % expr)
+    cls_info = get_cls_info(expr)
+    table = compile(cls_info.table, state)
     if state.context is TABLE and issubclass(expr, ClassAlias):
-        cls_info = get_cls_info(expr)
         return "%s AS %s" % (compile(cls_info.cls, state), table)
-    if isinstance(table, basestring):
-        return table
-    return compile(table, state)
+    return table

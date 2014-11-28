@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'encoders.ui'
 #
-# Created: Thu Jan 20 10:55:51 2011
+# Created: Wed Feb 26 18:21:30 2014
 #      by: PyQt4 UI code generator 4.4.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -468,8 +468,9 @@ class Ui_encoders(object):
         self.cfgABSOFFSET.setSizePolicy(sizePolicy)
         self.cfgABSOFFSET.setMinimumSize(QtCore.QSize(70, 16))
         self.cfgABSOFFSET.setMaximumSize(QtCore.QSize(16777215, 22))
-        self.cfgABSOFFSET.setMaximum(999999999)
         self.cfgABSOFFSET.setMinimum(-999999999)
+        self.cfgABSOFFSET.setMaximum(999999999)
+        self.cfgABSOFFSET.setSingleStep(1)
         self.cfgABSOFFSET.setObjectName("cfgABSOFFSET")
         self.hboxlayout6.addWidget(self.cfgABSOFFSET)
         spacerItem7 = QtGui.QSpacerItem(50, 16, QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
@@ -629,5 +630,4 @@ class Ui_encoders(object):
         self.label_18.setText(QtGui.QApplication.translate("encoders", "clock frequency", None, QtGui.QApplication.UnicodeUTF8))
         self.label_19.setText(QtGui.QApplication.translate("encoders", "sampling delay", None, QtGui.QApplication.UnicodeUTF8))
         self.label_20.setText(QtGui.QApplication.translate("encoders", "control bit pattern", None, QtGui.QApplication.UnicodeUTF8))
-
 
