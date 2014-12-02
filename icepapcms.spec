@@ -42,6 +42,9 @@ cd src
 %{python_sitelib}/*
 
 %changelog
+* Tue Dec 02 2014 Antonio Milan Otero <antonio.milan_otero@maxlab.lu.se> - 1.29-1
+- new icepapcms version, corresponding to the bliss_1_29.
+
 * Fri Apr 12 2013 Andreas Persson <andreas_g.persson@maxlab.lu.se> - 1.16-2
 - new name for pyIcePAP package
 - depend on python-ZODB3 on fedora
