@@ -1000,7 +1000,7 @@ class IcepapCMS(QtGui.QMainWindow):
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
         # The master catalog file
-        master_catalog_file = path+'/templates/catalog.xml'
+        master_catalog_file = path+'/../share/icepapcms/templates/catalog.xml'
 
         dlg = TemplatesCatalogWidget(master_catalog_file,self.ui.pageiPapDriver,self)
         dlg.show()
@@ -1008,17 +1008,17 @@ class IcepapCMS(QtGui.QMainWindow):
     def actionHelp(self):
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
-        webbrowser.open(path+'/doc/IcepapCMSUserManual.pdf')      
+        webbrowser.open(path+'/../share/icepapcms/doc/IcepapCMSUserManual.pdf')      
     
     def actionUser_Manual(self):
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
-        webbrowser.open(path+'/doc/IcePAP_UserManual_working.pdf')
+        webbrowser.open(path+'/../share/icepapcms/doc/IcePAP_UserManual_working.pdf')
     
     def actionHardware_Manual(self):
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
-        webbrowser.open(path+'/doc/IcePAP_HardwareManual.pdf')    
+        webbrowser.open(path+'/../share/icepapcms/doc/IcePAP_HardwareManual.pdf')    
     
 
                 

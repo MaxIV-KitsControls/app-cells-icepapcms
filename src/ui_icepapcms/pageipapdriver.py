@@ -475,7 +475,7 @@ class PageiPapDriver(QtGui.QWidget):
         
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
-        driverparameters = path+'/templates/driverparameters.xml'
+        driverparameters = path+'/../share/icepapcms/templates/driverparameters.xml'
 
         doc = minidom.parse(driverparameters)
         root  = doc.documentElement

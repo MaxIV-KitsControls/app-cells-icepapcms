@@ -51,7 +51,7 @@ class StormManager(Singleton):
         try:
             pathname = os.path.dirname(sys.argv[0])
             path = os.path.abspath(pathname)
-            sql_file = path+'/db/creates_sqlite.sql'
+            sql_file = path+'/../share/icepapcms/db/creates_sqlite.sql'
             f = file(sql_file,'rb')
             sql_script = f.read()
             f.close()

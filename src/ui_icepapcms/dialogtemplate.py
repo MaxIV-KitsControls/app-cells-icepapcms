@@ -11,7 +11,7 @@ class DialogTemplate(QtGui.QDialog):
         QtGui.QDialog.__init__(self, parent)
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
-        self.config_template = path+'/templates/driverparameters.xml'
+        self.config_template = path+'/../share/icepapcms/templates/driverparameters.xml'
         self.ui = Ui_DialogHistoricCfg()
         self.modal = True
         self.ui.setupUi(self)

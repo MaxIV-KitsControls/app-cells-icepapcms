@@ -18,7 +18,7 @@ class DialogDriverConflict(QtGui.QDialog):
         self.setFont(font)
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
-        self.config_template = path+'/templates/driverparameters.xml'
+        self.config_template = path+'/../share/icepapcms/templates/driverparameters.xml'
         self._driver = driver
         self._manager = MainManager()
         self.ui.tableWidget.horizontalHeader().setResizeMode(0, Qt.QHeaderView.Stretch)
