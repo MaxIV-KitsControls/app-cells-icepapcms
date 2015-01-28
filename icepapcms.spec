@@ -2,7 +2,7 @@
 
 Name:           icepapcms
 Version:        1.29
-Release:        2%{?dist}.maxlab
+Release:        3%{?dist}.maxlab
 Summary:        IcePAP CMS application
 
 Group:          Applications/Engineering
