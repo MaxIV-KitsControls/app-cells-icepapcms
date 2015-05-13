@@ -1,85 +1,266 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <icepapcms_templates>
+<template template_name="Stoegra SM 56.2.18 j3" IVOLT="45" NCURR="4.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Stoegra SM 56.2.18 j3</description></template>
 
-<template template_name="Berger Lahr VRDM268/50L3G8A" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="65" IVOLT="15" NCURR="1.4" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>ACCEL CAV, DASY CAV Berger Lahr VRDM268/50L3G8A
-Bipolar series 6 leads 2.1Arms, 6.7V, 2Ohm/win, 200steps
-time constant 5.5ms</description></template>
+<template template_name="Stoegra SM 56.1.18.J1" IVOLT="45" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Stoegra SM 56.1.18.J1</description></template>
 
-<template template_name="Oriental Motors PK267JA" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="65" IVOLT="15" NCURR="1.4" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>ALBA DI FSH, ALBA DI SCRH, ALBA DI SCRV
-Oriental Motors PK267JA
-Bipolar series 6 leads 1.4A, 6.7V, 4.8Ohm, 14.2mH, 200steps</description></template>
+<template template_name="Stoegra SM 56.3.18.J4" IVOLT="45" NCURR="6.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Stoegra SM 56.3.18.J4</description></template>
 
-<template template_name="Oriental Motors PK268M-E2.0B" MOTPHASES="2" MOTPOLES="100" MREGMODE="CURR" NVOLT="65" IVOLT="15" NCURR="1.4" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="800">
-<description>ALBA FE XBPM, ALBA FE FLUORESCENCE SCREEN
-Oriental Motors PK268M-E2.0B
-Bipolar series 8 leads 1.4A, 6.3V, 4.5Ohm, 19.2mH, 400steps
-M stands for extended resolution</description></template>
+<template template_name="Phytron ZSS 19.200.0.6 parallel" IVOLT="31" NCURR="0.6" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 19.200.0.6 parallel</description></template>
 
-<template template_name="Oriental Motors PK264BE-SG10" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="65" IVOLT="15" NCURR="1.4" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>ALBA FE MOVABLE MASK Oriental Motors PK264BE-SG10
-Bipolar series 8 leads 1.4A, 3.9V, 2.8Ohm, 5.6mH
-200steps x10 gear,  0.18stepangle
-B stands for double shaft. No info for E.
-SG stands for geared stage and affects ANSTEPs</description></template>
+<template template_name="Phytron ZSS 25.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 25.200.1.2 parallel</description></template>
 
-<template template_name="SLO-SYN KML061F02" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="65" IVOLT="15" NCURR="1" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>Kaliber SCRH SLO-SYN KML061-F02
-Bipolar 4 leads 1.05A, 5.19V, 4.94Ohms 30.1mH, 200steps</description></template>
+<template template_name="Phytron ZSS 32.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 32.200.1.2 parallel</description></template>
 
-<template template_name="Phytron ZSH 88/2.200.8" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="70" IVOLT="15" NCURR="8" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>ALBA ID IVU21 Phytron ZSH 88/2.200.8
-Bipolar parallel 4 leads
-8A, 0.2Ohm/win (0.1Ohm),1.15mH/win (1.15mH), 200steps</description></template>
+<template template_name="Phytron ZSS 32.200.2.5 parallel" IVOLT="31" NCURR="2.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 32.200.2.5 parallel</description></template>
 
-<template template_name="Phytron ZSH 87/2.200.6.5-12-H500-KEB" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="70" IVOLT="15" NCURR="6.5" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>ALBA ID MPW80 GAP Phytron ZSH 87/2.200.6.5-12-H500-KEB
-Bipolar parallel 4 leads. H550 encoder 500 lines. KEB brake.
-6.5A, 0.5Ohm/whin (0.25Ohm), 1.5mH/win (1.5mH) 200 steps</description></template>
+<template template_name="Phytron ZSS 41.500.0.6 parallel" IVOLT="31" NCURR="0.6" ICURR="50" MOTPOLES="125" ANTURN="1" ANSTEP="1000" DEFVEL="2500" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="1250" >
+<description>Phytron ZSS 41.500.0.6 parallel</description></template>
 
-<template template_name="Phytron ZSH 87/2.200.6.5-12-H500" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="70" IVOLT="15" NCURR="6.5" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>ALBA ID MPW80 TAPER Phytron ZSH 87/2.200.6.5-12-H500
-Bipolar parallel 4 leads. H500 encoder 500 lines
-6.5A, 0.5Ohm/win(0.25Ohm), 1.5mH/win (1.5mH), 200 steps
-The 12 seems to be the shaft diameter</description></template>
+<template template_name="Phytron ZSS 42.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 42.200.1.2 parallel</description></template>
 
-<template template_name="Phytron ZSH 88/3.200.8" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="70" IVOLT="15" NCURR="8" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>ALBA ID EU62, ALBA ID EU71 Phytron ZSH 88/3.200.8
-Bipolar parallel 4 leads 8A, 0.29Ohm/win (0.14Ohm)
-2.6mH/win (2.6mH), 200steps</description></template>
+<template template_name="Phytron ZSS 43.500.2.5 parallel" IVOLT="31" NCURR="2.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 43.500.2.5 parallel</description></template>
 
-<template template_name="McLennan 23HS-309" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="67" IVOLT="15" NCURR="3.5" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>XAS A. McLennan 23HS-309 Bipolar parallel 8 leads
-4.7A/phase,0.33Ohms/phase, 0.5mH/phase, 200steps,
-HT: 95Ncm, Rotor Inertia: 0.239kg/cm2
-Demanded standby current 1A, Effective current 3.5A</description></template>
+<template template_name="Phytron ZSS 52.200.2.5 parallel" IVOLT="56" NCURR="2.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 52.200.2.5 parallel</description></template>
 
-<template template_name="ARUN microelectronics AML C17.1R" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="67" IVOLT="15" NCURR="0.9" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>XAS B. ARUN microelectronics AML C17.1R
-Bipolar parallel 4 leads 0.9A, 67V, 4Ohm, 4.5mH, 200steps.
-Demanded icurr 0.3A, ncurr 0.9A </description></template>
+<template template_name="Phytron ZSS.52.200.2.5 parallel" IVOLT="56" NCURR="2.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS.52.200.2.5 parallel</description></template>
 
-<template template_name="UNKNOWN 1.2A" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="67" IVOLT="15" NCURR="1.2" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>XAS C. Stepper Motor (1.2A) </description></template>
+<template template_name="Phytron ZSS.52.200.2.5 series" IVOLT="56" NCURR="1.25" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS.52.200.2.5 series</description></template>
 
-<template template_name="Phytron VSS 25.200.1.2" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="67" IVOLT="15" NCURR="1.2" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>XAS D. Phytron VSS 25.200.1.2
-1.2A/ph 0.95Ohm/ph 0.4mH/ph 200steps
-HT: 12 mNm, Rotor Inertia: 0.002 kg/cm2</description></template>
+<template template_name="Phytron ZSS 57.200.1.2 parallel" IVOLT="56" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 57.200.1.2 parallel</description></template>
 
-<template template_name="Phytron VSS 32.200.1.2" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="67" IVOLT="15" NCURR="1.2" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>XAS E, F, G. Phytron VSS 32.200.1.2
-1.2A/ph 1.3 Ohm/ph 1.2mH/ph 200steps,
-HT: 45 mNm, Rotor Inertia: 0.01 kg/cm2</description></template>
+<template template_name="Phytron ZSS 57.200.2.5 parallel" IVOLT="56" NCURR="2.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSS 57.200.2.5 parallel</description></template>
 
-<template template_name="McLennan 23HSX-206" MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="67" IVOLT="15" NCURR="3.5" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>XAS H, I. McLennan 23HSX-206
-0.7Ohm/ph 4.2A/ph 0.9mH/ph 98Ncm 0.22kg/cm2, 0.7kg</description></template>
+<template template_name="Phytron ZSH 88-3.200.8 parallel" IVOLT="56" NCURR="8" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSH 88-3.200.8 parallel</description></template>
 
-<template template_name="McLennan 23HS-108 " MOTPHASES="2" MOTPOLES="50" MREGMODE="CURR" NVOLT="67" IVOLT="15" NCURR="3.9" CURRGAIN="MEDIUM" ANTURN="1" ANSTEP="400">
-<description>XAS K. McLennan 23HS-108
-**Mk 2 52Ncm 0.124Kg/cm2 0.37Ohm/ph 3.9A/ph 0.59mH/ph
-8leads 0.5kg, 200 steps, bipolar parallel.</description></template>
+<template template_name="Phytron ZSH 87-2.200.6.5 parallel" IVOLT="56" NCURR="6.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSH 87-2.200.6.5 parallel</description></template>
+
+<template template_name="Phytron ZSH 87-2.200.8.4 parallel" IVOLT="56" NCURR="8.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSH 87-2.200.8.4 parallel</description></template>
+
+<template template_name="Phytron ZSH 88-2.200.8 parallel" IVOLT="56" NCURR="8" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron ZSH 88-2.200.8 parallel</description></template>
+
+<template template_name="Phytron VSS 19.200.0.6 parallel" IVOLT="31" NCURR="0.6" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 19.200.0.6 parallel</description></template>
+
+<template template_name="Phytron VSS 25.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 25.200.1.2 parallel</description></template>
+
+<template template_name="Phytron VSS 32.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 32.200.1.2 parallel</description></template>
+
+<template template_name="Phytron VSS 33.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 33.200.1.2 parallel</description></template>
+
+<template template_name="Phytron VSS 42.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 42.200.1.2 parallel</description></template>
+
+<template template_name="Phytron VSS 42.500.2.5 parallel" IVOLT="31" NCURR="2.5" ICURR="50" MOTPOLES="125" ANTURN="1" ANSTEP="1000" DEFVEL="2500" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="1250" >
+<description>Phytron VSS 42.500.2.5 parallel</description></template>
+
+<template template_name="Phytron VSS 43.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 43.200.1.2 parallel</description></template>
+
+<template template_name="Phytron VSS 43.200.2.5 parallel" IVOLT="31" NCURR="2.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 43.200.2.5 parallel</description></template>
+
+<template template_name="Phytron VSS 52.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 52.200.1.2 parallel</description></template>
+
+<template template_name="Phytron VSS 52.200.2.5 parallel" IVOLT="31" NCURR="2.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 52.200.2.5 parallel</description></template>
+
+<template template_name="Phytron VSS 52.200.5 parallel" IVOLT="31" NCURR="5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 52.200.5 parallel</description></template>
+
+<template template_name="Phytron VSS 57.200.1.2 parallel" IVOLT="31" NCURR="1.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 57.200.1.2 parallel</description></template>
+
+<template template_name="Phytron VSS 57.200.2.5 parallel" IVOLT="31" NCURR="2.5" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Phytron VSS 57.200.2.5 parallel</description></template>
+
+<template template_name="Superior Slo-syn KML062F13" IVOLT="56" NCURR="6.6" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Superior Slo-syn KML062F13</description></template>
+
+<template template_name="Superior Slo-syn KML061F05" IVOLT="36" NCURR="2.7" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Superior Slo-syn KML061F05</description></template>
+
+<template template_name="Superior Slo-syn KML061F02" IVOLT="36" NCURR="1.05" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Superior Slo-syn KML061F02</description></template>
+
+<template template_name="Oriental PK223PB series" IVOLT="36" NCURR="0.67" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK223PB series</description></template>
+
+<template template_name="Oriental PK245-01 series" IVOLT="36" NCURR="0.85" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK245-01 series</description></template>
+
+<template template_name="Oriental PK243-01-SGxx series" IVOLT="36" NCURR="0.67" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK243-01-SGxx series</description></template>
+
+<template template_name="Oriental PK243-02-SGxx series" IVOLT="36" NCURR="0.28" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK243-02-SGxx series</description></template>
+
+<template template_name="Oriental PK243-01-SGxx series" IVOLT="36" NCURR="0.67" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK243-01-SGxx series</description></template>
+
+<template template_name="Oriental PK243-01-SGxx series" IVOLT="36" NCURR="0.67" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK243-01-SGxx series</description></template>
+
+<template template_name="Oriental PK244-01 series" IVOLT="36" NCURR="0.85" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK244-01 series</description></template>
+
+<template template_name="Oriental PK264-02 series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK264-02 series</description></template>
+
+<template template_name="Oriental PK264-E2.0 series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK264-E2.0 series</description></template>
+
+<template template_name="Oriental PK264M-E2.0 parallel" IVOLT="36" NCURR="2.8" ICURR="50" MOTPOLES="100" ANTURN="1" ANSTEP="800" DEFVEL="2000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="1000" >
+<description>Oriental PK264M-E2.0 parallel</description></template>
+
+<template template_name="Oriental PK264BE-SGxx series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK264BE-SGxx series</description></template>
+
+<template template_name="Oriental PK264BE-SGxx parallel" IVOLT="36" NCURR="2.8" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK264BE-SGxx parallel</description></template>
+
+<template template_name="Oriental PK264JDA" IVOLT="36" NCURR="2.8" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK264JDA</description></template>
+
+<template template_name="Oriental PK266-02 series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK266-02 series</description></template>
+
+<template template_name="Oriental PK267JA series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK267JA series</description></template>
+
+<template template_name="Oriental PK268-E2.0 series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK268-E2.0 series</description></template>
+
+<template template_name="Oriental PK268M-E2.0 parallel" IVOLT="36" NCURR="2.8" ICURR="50" MOTPOLES="100" ANTURN="1" ANSTEP="800" DEFVEL="2000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="1000" >
+<description>Oriental PK268M-E2.0 parallel</description></template>
+
+<template template_name="Oriental PK268-01 series" IVOLT="36" NCURR="0.71" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK268-01 series</description></template>
+
+<template template_name="Oriental PK268-02 series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK268-02 series</description></template>
+
+<template template_name="Oriental PK268M-E2.0 series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="100" ANTURN="1" ANSTEP="800" DEFVEL="2000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="1000" >
+<description>Oriental PK268M-E2.0 series</description></template>
+
+<template template_name="Oriental PK268M-02 series" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="100" ANTURN="1" ANSTEP="800" DEFVEL="2000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="1000" >
+<description>Oriental PK268M-02 series</description></template>
+
+<template template_name="Oriental PK268-03 series" IVOLT="36" NCURR="2.1" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK268-03 series</description></template>
+
+<template template_name="Oriental PK269JDB" IVOLT="36" NCURR="2.8" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK269JDB</description></template>
+
+<template template_name="Oriental PK296-E4.5 series" IVOLT="36" NCURR="3.18" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK296-E4.5 series</description></template>
+
+<template template_name="Oriental PK296-E4.5 parallel" IVOLT="36" NCURR="6.3" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK296-E4.5 parallel</description></template>
+
+<template template_name="Oriental PK296-AE-SGxx series" IVOLT="36" NCURR="2.1" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK296-AE-SGxx series</description></template>
+
+<template template_name="Oriental PK296-AE-SGxx parallel" IVOLT="36" NCURR="4.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK296-AE-SGxx parallel</description></template>
+
+<template template_name="Oriental PK299-E4.5 series" IVOLT="36" NCURR="3.18" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK299-E4.5 series</description></template>
+
+<template template_name="Oriental PK299-E4.5 parallel" IVOLT="36" NCURR="6.3" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Oriental PK299-E4.5 parallel</description></template>
+
+<template template_name="Oriental PKP268MD28x-x" IVOLT="18" NCURR="2.8" ICURR="50" MOTPOLES="100" ANTURN="1" ANSTEP="800" DEFVEL="2000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="1000" >
+<description>Oriental PKP268MD28x-x</description></template>
+
+<template template_name="Faulhaber Precistep AM1524-2R-A-0,25-12,5" IVOLT="11" NCURR="0.25" ICURR="50" MOTPOLES="6" ANTURN="1" ANSTEP="48" DEFVEL="120" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="60" >
+<description>Faulhaber Precistep AM1524-2R-A-0,25-12,5</description></template>
+
+<template template_name="Faulhaber Precistep AM1524-2R-A-0,45-3,6" IVOLT="7" NCURR="0.45" ICURR="50" MOTPOLES="6" ANTURN="1" ANSTEP="48" DEFVEL="120" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="60" >
+<description>Faulhaber Precistep AM1524-2R-A-0,45-3,6</description></template>
+
+<template template_name="McLennan 23HT18C230 parallel" IVOLT="36" NCURR="4.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>McLennan 23HT18C230 parallel</description></template>
+
+<template template_name="McLennan 23HS-309 parallel" IVOLT="36" NCURR="4.7" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>McLennan 23HS-309 parallel</description></template>
+
+<template template_name="McLennan 17HS-240E" IVOLT="36" NCURR="2.3" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>McLennan 17HS-240E</description></template>
+
+<template template_name="McLennan 23HS-108 Mk2" IVOLT="36" NCURR="3.9" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>McLennan 23HS-108 Mk2</description></template>
+
+<template template_name="McLennan 23HSX-206 parallel" IVOLT="36" NCURR="4.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>McLennan 23HSX-206 parallel</description></template>
+
+<template template_name="McLennan 23HSX-306E parallel" IVOLT="36" NCURR="4.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>McLennan 23HSX-306E parallel</description></template>
+
+<template template_name="Berger Lahr VRDM 268-50L3G8A" IVOLT="36" NCURR="3.1" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Berger Lahr VRDM 268-50L3G8A</description></template>
+
+<template template_name="PowerMaxII P21NRXD-LNF-NS-00" IVOLT="36" NCURR="0.76" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>PowerMaxII P21NRXD-LNF-NS-00</description></template>
+
+<template template_name="Linear Engineering 3518X-04D-0" IVOLT="36" NCURR="0.45" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Linear Engineering 3518X-04D-0</description></template>
+
+<template template_name="Linear Engineering 5718X-18DE-01 series" IVOLT="36" NCURR="3" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Linear Engineering 5718X-18DE-01 series</description></template>
+
+<template template_name="Linear Engineering 5718X-18DE-01 parallel" IVOLT="56" NCURR="6" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Linear Engineering 5718X-18DE-01 parallel</description></template>
+
+<template template_name="Linear engineering 41185-04PD-23RO parallel" IVOLT="36" NCURR="1.34" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Linear engineering 41185-04PD-23RO parallel</description></template>
+
+<template template_name="Linear engineering 4118S-04s series" IVOLT="36" NCURR="0.67" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Linear engineering 4118S-04s series</description></template>
+
+<template template_name="Linear engineering 4118S-04s parallel" IVOLT="36" NCURR="1.34" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Linear engineering 4118S-04s parallel</description></template>
+
+<template template_name="Nanotec ST5918L3008 series" IVOLT="36" NCURR="2.1" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Nanotec ST5918L3008 series</description></template>
+
+<template template_name="Nanotec ST5918L3008 parallel" IVOLT="36" NCURR="4.2" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Nanotec ST5918L3008 parallel</description></template>
+
+<template template_name="Nanotec L4118S1404-M6X1" IVOLT="36" NCURR="1.4" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Nanotec L4118S1404-M6X1</description></template>
+
+<template template_name="Standa 8cma20-8-15" IVOLT="18" NCURR="0.6" ICURR="50" MOTPOLES="50" ANTURN="1" ANSTEP="400" DEFVEL="1000" DEFACCT="0.3" MREGMODE="CURR" CURRGAIN="LOW" HOMEVEL="500" >
+<description>Standa 8cma20-8-15</description></template>
+
+<template template_name="Renishaw Resolute 32 bits" ABSMODE="BISSC" SSIDBITS="0" SSICODE="BINARY" SSICLOCK="250KHz" SSIDELAY="0" SSISTATUS="S" >
+<description>Renishaw Resolute 32 bits</description></template>
+
+<template template_name="Renishaw Resolute 26 bits" ABSMODE="BISSC" SSIDBITS="26" SSICODE="BINARY" SSICLOCK="250KHz" SSIDELAY="0" SSISTATUS="S" >
+<description>Renishaw Resolute 26 bits</description></template>
+
+<template template_name="Renishaw Resolute 36 bits" ABSMODE="BISSC" SSIDBITS="1" SSICODE="BINARY" SSICLOCK="250KHz" SSIDELAY="0" SSISTATUS="S" >
+<description>Renishaw Resolute 36 bits</description></template>
 
 </icepapcms_templates>
