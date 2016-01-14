@@ -1,8 +1,33 @@
-IcepapCMS 2.0 2014/xx/xx
+IcepapCMS 2.0 2015/xx/xx
 -------------------------------------------------------------------------
++) ISSUE 076 [PROTOTYPE] - waiting input from MAX-IV and ESRF
 
+IcepapCMS 1.32 2015/05/29 ;-D
+-------------------------------------------------------------------------
++) ISSUE <email> allow negative values in home position
++) ISSUE <email> Unknown-tab parameters available in Database and Load/Export files
 
-IcepapCMS 1.29 2014/02/26
+IcepapCMS 1.31 2015/03/02 ;-D
+-------------------------------------------------------------------------
++) ISSUE <email> absolute and incremental move fields size restored (bug introduced in 1.30)
++) ISSUE <email> CJOG used when in CONFIG MODE, and JOG added when in OPER MODE
++) Set minimum size of 1200x720 to avoid fields/text overlaps
+
+IcepapCMS 1.30 2014/12/11
+-------------------------------------------------------------------------
++) Some IO and ENCODER comboboxes are now wider to adjust to options length
++) ISSUE 074 [TEST] ADDED CSWITCH command input parameter (not functional)
++) ISSUE 074 [IO] EXTDISABLE, EXTBUSY and EXTPOWER parameters accessible
++) ISSUE 074 [IO] Alarm signals group renamed to Input Control Signals
++) ISSUE 074 [CLOOP] STRTVEL paramter accessible
++) ISSUE 074 [CLOOP] PCLMODE SIMPLECHK flag parameter accessible
++) ISSUE 074 [AXIS] STRTVEL moved to closed loop tab
++) ISSUE 074 [AXIS] LNKNAME parameter accessible
++) ISSUE 074 [AXIS] POSSRC paramter removed
++) ISSUE 074 [AXIS] Position Control updated
+?) renamed user manual from doc/IcePAP_UserManual_working.pdf to doc/IcePAP_UserManual.pdf
+
+IcepapCMS 1.29 2014/02/26 (ESRF-BLISS synchronization)
 IcepapCMS 1.26 2014/02/26
 -------------------------------------------------------------------------
 +) ISSUE 068 Better IcepapCMS starting time.

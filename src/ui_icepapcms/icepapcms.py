@@ -24,7 +24,7 @@ from templatescatalogwidget import TemplatesCatalogWidget
 #from dialogtemplate import DialogTemplate
 from optparse import OptionParser
 
-__version__ = "1.29"
+__version__ = "1.32"
 
 class IcepapApp(QtGui.QApplication):    
     def __init__(self, *args):
@@ -1013,7 +1013,7 @@ class IcepapCMS(QtGui.QMainWindow):
     def actionUser_Manual(self):
         pathname = os.path.dirname(sys.argv[0])
         path = os.path.abspath(pathname)
-        webbrowser.open(path+'/../share/icepapcms/doc/IcePAP_UserManual_working.pdf')
+        webbrowser.open(path+'/../share/icepapcms/doc/IcePAP_UserManual.pdf')
     
     def actionHardware_Manual(self):
         pathname = os.path.dirname(sys.argv[0])

@@ -62,6 +62,8 @@ class PageiPapDriver(QtGui.QWidget):
         self.param_to_widgets = {}
         self.ui_widgets = []
         
+        self.param_to_unknown_widgets = {}
+
         self.tab_frames = [axis_frame,motor_frame,encoders_frame,closedloop_frame,homing_frame,io_frame]
         self.tab_labels = ["Axis","Motor","Encoders","Closed loop","Homing","I/O"]
 
@@ -221,8 +223,8 @@ class PageiPapDriver(QtGui.QWidget):
         QtCore.QObject.connect(self.ui.sliderJog,QtCore.SIGNAL("valueChanged(int)"),self.sliderChanged)
         
         QtCore.QObject.connect(self.sliderTimer,QtCore.SIGNAL("timeout()"),self.resetSlider)
-        
 
+        QtCore.QObject.connect(self.ui.cmdCSWITCH,QtCore.SIGNAL("currentIndexChanged(QString)"),self.changeSwitchesSetup)
     
     
 
@@ -745,6 +747,7 @@ class PageiPapDriver(QtGui.QWidget):
                 unknownParams = True
                 self.addUnknownWidget(name, value)
 
+
         unknown_index = self.ui.tabWidget.indexOf(self.unknown_tab)
 
         if unknownParams:
@@ -924,9 +927,12 @@ class PageiPapDriver(QtGui.QWidget):
         
                 self.unknown_table_widget.setCellWidget(row, 2, widget)
 
+                self.param_to_unknown_widgets[param_name] = widget
+
                 self._setWidgetsValue([widget],param_value)
                 
                 self._connectWidgetToSignalMap(widget)
+
 
 
 
@@ -1033,6 +1039,10 @@ class PageiPapDriver(QtGui.QWidget):
                             # SHOULD RETRIEVE THE VALUE FROM THE DRIVER'S COMMAND
                             if param == 'AUXPS':
                                 ## THIS VALUE DOES NOT COME IN THE CONFIGURATION
+                                pass
+                            elif param == 'CSWITCH':
+                                ## THIS VALUE DOES NOT COME NEITHER IN THE CONFIGUARTION
+                                print 'eo....cswitch'
                                 pass
                             elif param == 'INDEXER':
                                 values = controller.readIcepapParameters(system_name, driver_addr,['INDEXER'])
@@ -1355,6 +1365,13 @@ class PageiPapDriver(QtGui.QWidget):
                 self._setWidgetsValue(widgets, param_value, set_default=False)
             elif param_name == 'IPAPNAME':
                 self._setWidgetsValue(self.param_to_widgets.get('DriverName'), param_value, set_default=False)
+            elif param_name in ['ID','VER']:
+                pass
+            else:
+                # SINCE UNKNOWN WIDGETS ARE CREATED EVERY TIME, ANOTHER DICT HAS TO BE AVAILABLE FOR THEM
+                w = self.param_to_unknown_widgets.get(param_name)
+                self._setWidgetsValue([w], param_value, set_default=False)
+
         self.highlightTabs()
         self._connectHighlighting()
         QtGui.QApplication.instance().restoreOverrideCursor()                                      
@@ -1678,6 +1695,16 @@ class PageiPapDriver(QtGui.QWidget):
             self.ui.btnEnable.setText("ON")
             self._manager.disableDriver(self.icepap_driver.icepapsystem_name, self.icepap_driver.addr)
         
+
+    def changeSwitchesSetup(self, mode):
+        return
+        # SHOULD CHANGE SWITCHES SETUP... HOW? NOT IN CONFIG MODE...
+        #try:
+        #    pass
+        #    #self._manager.jogDriver(self.icepap_driver.icepapsystem_name, self.icepap_driver.addr, speed)
+        #except Exception,e:
+        #    MessageDialogs.showWarningMessage(self, "Switches setup", "Error while trying to change switches setup:\n"+str(e))
+
 
     # ---------------------- Historic Widget -------------------
     def showHistoricWidget(self):

@@ -5,19 +5,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>473</width>
-    <height>258</height>
+    <width>511</width>
+    <height>271</height>
    </rect>
   </property>
   <property name="sizePolicy" >
-   <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
+   <sizepolicy vsizetype="MinimumExpanding" hsizetype="MinimumExpanding" >
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
   <property name="minimumSize" >
    <size>
-    <width>410</width>
+    <width>511</width>
     <height>250</height>
    </size>
   </property>
@@ -33,6 +33,12 @@
    </property>
    <item row="0" column="0" >
     <widget class="QFrame" name="io_frame" >
+     <property name="minimumSize" >
+      <size>
+       <width>280</width>
+       <height>0</height>
+      </size>
+     </property>
      <property name="frameShape" >
       <enum>QFrame::NoFrame</enum>
      </property>
@@ -52,8 +58,8 @@
           </property>
           <property name="minimumSize" >
            <size>
-            <width>220</width>
-            <height>86</height>
+            <width>250</width>
+            <height>125</height>
            </size>
           </property>
           <property name="title" >
@@ -349,12 +355,12 @@
           </property>
           <property name="minimumSize" >
            <size>
-            <width>182</width>
-            <height>64</height>
+            <width>250</width>
+            <height>140</height>
            </size>
           </property>
           <property name="title" >
-           <string>Alarm signals</string>
+           <string>Input Control Signals</string>
           </property>
           <layout class="QGridLayout" >
            <item row="0" column="0" >
@@ -461,12 +467,168 @@
              </property>
             </widget>
            </item>
+           <item row="2" column="0" >
+            <widget class="QLabel" name="label_9" >
+             <property name="sizePolicy" >
+              <sizepolicy vsizetype="Expanding" hsizetype="Fixed" >
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize" >
+              <size>
+               <width>70</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="maximumSize" >
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="text" >
+              <string>External Disable</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1" >
+            <widget class="QComboBox" name="cfgEXTDISABLE" >
+             <property name="sizePolicy" >
+              <sizepolicy vsizetype="Maximum" hsizetype="Expanding" >
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize" >
+              <size>
+               <width>50</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="maximumSize" >
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="font" >
+              <font>
+               <pointsize>7</pointsize>
+              </font>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" >
+            <widget class="QLabel" name="label_9" >
+             <property name="sizePolicy" >
+              <sizepolicy vsizetype="Expanding" hsizetype="Fixed" >
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize" >
+              <size>
+               <width>70</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="maximumSize" >
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="text" >
+              <string>External Busy</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1" >
+            <widget class="QComboBox" name="cfgEXTBUSY" >
+             <property name="sizePolicy" >
+              <sizepolicy vsizetype="Maximum" hsizetype="Expanding" >
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize" >
+              <size>
+               <width>50</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="maximumSize" >
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="font" >
+              <font>
+               <pointsize>7</pointsize>
+              </font>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0" >
+            <widget class="QLabel" name="label_9" >
+             <property name="sizePolicy" >
+              <sizepolicy vsizetype="Expanding" hsizetype="Fixed" >
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize" >
+              <size>
+               <width>70</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="maximumSize" >
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="text" >
+              <string>External Power</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1" >
+            <widget class="QComboBox" name="cfgEXTPOWER" >
+             <property name="sizePolicy" >
+              <sizepolicy vsizetype="Maximum" hsizetype="Expanding" >
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize" >
+              <size>
+               <width>50</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="maximumSize" >
+              <size>
+               <width>16777215</width>
+               <height>22</height>
+              </size>
+             </property>
+             <property name="font" >
+              <font>
+               <pointsize>7</pointsize>
+              </font>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
        </layout>
       </item>
-      <item rowspan="2" row="0" column="1" >
+      <item rowspan="2" row="0" column="2" >
        <widget class="QGroupBox" name="groupBox_2" >
         <property name="sizePolicy" >
          <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
@@ -687,7 +849,7 @@
            <property name="sizeHint" stdset="0" >
             <size>
              <width>20</width>
-             <height>10</height>
+             <height>40</height>
             </size>
            </property>
           </spacer>
@@ -862,20 +1024,23 @@
         </layout>
        </widget>
       </item>
-      <item row="0" column="2" >
+      <item row="0" column="3" >
        <spacer name="horizontalSpacer" >
         <property name="orientation" >
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType" >
+         <enum>QSizePolicy::MinimumExpanding</enum>
+        </property>
         <property name="sizeHint" stdset="0" >
          <size>
-          <width>176</width>
+          <width>20</width>
           <height>20</height>
          </size>
         </property>
        </spacer>
       </item>
-      <item row="1" column="2" >
+      <item row="1" column="3" >
        <spacer name="horizontalSpacer_2" >
         <property name="orientation" >
          <enum>Qt::Horizontal</enum>
@@ -901,7 +1066,7 @@
         </property>
        </spacer>
       </item>
-      <item row="2" column="1" >
+      <item row="2" column="2" >
        <spacer name="verticalSpacer_2" >
         <property name="orientation" >
          <enum>Qt::Vertical</enum>
@@ -910,6 +1075,22 @@
          <size>
           <width>20</width>
           <height>128</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item rowspan="2" row="0" column="1" >
+       <spacer name="horizontalSpacer_3" >
+        <property name="orientation" >
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType" >
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0" >
+         <size>
+          <width>20</width>
+          <height>20</height>
          </size>
         </property>
        </spacer>
