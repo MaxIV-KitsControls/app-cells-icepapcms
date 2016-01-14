@@ -42,6 +42,9 @@ cd src
 %{python_sitelib}/*
 
 %changelog
+* Thu Jan 13 2015 Antonio Milan Otero <antonio.milan_otero@maxlab.lu.se> - 1.32-1
+- new icepapcms version, corresponding to the 1_32.
+
 * Tue Dec 02 2014 Antonio Milan Otero <antonio.milan_otero@maxlab.lu.se> - 1.29-1
 - new icepapcms version, corresponding to the bliss_1_29.
 
