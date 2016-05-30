@@ -24,8 +24,6 @@ from templatescatalogwidget import TemplatesCatalogWidget
 #from dialogtemplate import DialogTemplate
 from optparse import OptionParser
 
-__version__ = "2.00"
-
 class IcepapApp(QtGui.QApplication):    
     def __init__(self, *args):
 
@@ -40,6 +38,8 @@ class IcepapApp(QtGui.QApplication):
                           action="store_true", dest="allnets", help="Allow all available icepap systems. False by default")
         parser.add_option("","--ldap",
                           action="store_true", dest="ldap", help="Force LDAP login to get username. False by default")
+        parser.add_option("-c", "--config-path",
+                          action="store", type ="string", dest="config_path", help="Path to icepapcms.conf. Defaults to .icepapcms/ or /etc/icepapcms/")
         (options, args) = parser.parse_args()
 
 
@@ -60,7 +60,7 @@ class IcepapCMS(QtGui.QMainWindow):
 
         self.ui = Ui_IcepapCMS()
         self.ui.setupUi(self)
-        self._config = ConfigManager()
+        self._config = ConfigManager(options)
         self._config._options = options
         self._config._args = args
 
