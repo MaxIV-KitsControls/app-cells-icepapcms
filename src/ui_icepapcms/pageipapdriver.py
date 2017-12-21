@@ -7,7 +7,6 @@ from ui_encoders import Ui_encoders
 from ui_closedloop import Ui_closedloop
 from ui_homing import Ui_homing
 from ui_io import Ui_io
-from ui_trajectory import Ui_trajectory
 
 from qrc_icepapcms import *
 from xml.dom import minidom, Node
@@ -23,6 +22,7 @@ import datetime
 import tempfile
 from historiccfgwidget import HistoricCfgWidget
 
+import numpy as np
 import pyqtgraph as pg
 import time
 
@@ -61,17 +61,13 @@ class PageiPapDriver(QtGui.QWidget):
         io_frame = QtGui.QFrame()
         self.io.setupUi(io_frame)
 
-        self.trajectory = Ui_trajectory()
-        trajectory_frame = QtGui.QFrame()
-        self.trajectory.setupUi(trajectory_frame)
-
         self.param_to_widgets = {}
         self.ui_widgets = []
 
         self.param_to_unknown_widgets = {}
 
-        self.tab_frames = [axis_frame, motor_frame, encoders_frame, closedloop_frame, homing_frame, io_frame, trajectory_frame]
-        self.tab_labels = ["Axis", "Motor", "Encoders", "Closed loop", "Homing", "I/O", "Trajectory"]
+        self.tab_frames = [axis_frame, motor_frame, encoders_frame, closedloop_frame, homing_frame, io_frame]
+        self.tab_labels = ["Axis", "Motor", "Encoders", "Closed loop", "Homing", "I/O"]
 
         for index in range(len(self.tab_labels)):
             widget = self.tab_frames[index]
@@ -172,11 +168,16 @@ class PageiPapDriver(QtGui.QWidget):
 
         self.dbStartupConfig = None
 
-        ## Add pyqtgraph
-        self.ice_plot = pg.PlotWidget()
-        self.plot_item = self.ice_plot.plotItem
-        self.ui.gridlayout3.addWidget(self.ice_plot)
-
+        # Add a pyqtgraph PlotWidget for displaying motor positions.
+        self.pw = pg.PlotWidget()
+        self.myCurve = self.pw.plot()
+        self.myCurve.setPen({200, 200, 100})
+        self.xArray = np.array([0])
+        self.yArray = np.array([0])
+        self.time_array = []
+        self.pos_array = []
+        # self.myItem = self.pw.plotItem
+        self.ui.gridlayout3.addWidget(self.pw)
 
     def signalConnections(self):
         QtCore.QObject.connect(self.ui.btnBlink,QtCore.SIGNAL("pressed()"),self.btnBlink_on_press)
@@ -1187,22 +1188,24 @@ class PageiPapDriver(QtGui.QWidget):
         self.ui.LCDPositionTest.display(position[0])
         self.ui.LCDEncoder.display(position[1])
 
-        # Update the graphic trend view.
-        #s = self.ui.graphicsView.scene()
+        #self.myItem = self.pw.plotItem
+        #self.myItem.addItem(y=position[0], x=0)
 
-        #self.plot_item = self.ice_plot.plotItem
-        #self.plot_item.addItem(y=position[0], x=0)
-        self.pos_array = []
-        self.pos_array.append(position[0])
-        self.time_array = []
+        myx = time.time()
+        myy = position[0]
+#        self.xArray.  (np.random.random(4))
+#        self.yArray.append(np.random.random(100))
+
+        #self.myCurve.setData(y=self.yArray, x=self.xArray)
+
         self.time_array.append(time.time())
-        self.ice_plot.plot(y=self.pos_array, x=self.time_array,
-                           pen={"color": "F00", "width": 30, "symbol":"o"})
+        self.pos_array.append(position[0])
+        self.pw.plot(y=self.pos_array, x=self.time_array)
 
         #self.item = pg.PlotDataItem(pen={"color": "FF0", "width": 1})
-        #self.plot_item.addItem(self.item)
-        #self.plot_item.setData(y=self.pos_array, x=self.time_array)
-        #self.plot_item.set
+        #self.myItem.addItem(self.item)
+        #self.myItem.setData(y=self.pos_array, x=self.time_array)
+        #self.myItem.set
 
     def btnGO_on_click(self):
         new_position = self.ui.txtMvAbsolute.text()
