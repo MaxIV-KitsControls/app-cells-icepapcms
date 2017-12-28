@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'pageipapdriver.ui'
 #
-# Created: Fri Dec 15 15:15:34 2017
+# Created: Fri Dec 22 09:52:51 2017
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -874,7 +874,7 @@ class Ui_PageiPapDriver(object):
         self.LCDEncoder.setObjectName(_fromUtf8("LCDEncoder"))
         self.gridlayout5.addWidget(self.LCDEncoder, 3, 1, 1, 3)
         self.vboxlayout1.addLayout(self.gridlayout5)
-        self.gridlayout3.addLayout(self.vboxlayout1, 0, 1, 2, 2)
+        self.gridlayout3.addLayout(self.vboxlayout1, 0, 1, 2, 3)
         self.gridlayout6 = QtGui.QGridLayout()
         self.gridlayout6.setMargin(0)
         self.gridlayout6.setSpacing(6)
@@ -892,9 +892,14 @@ class Ui_PageiPapDriver(object):
         self.textLabel3_4.setObjectName(_fromUtf8("textLabel3_4"))
         self.gridlayout6.addWidget(self.textLabel3_4, 2, 0, 1, 1)
         self.gridlayout3.addLayout(self.gridlayout6, 0, 0, 1, 1)
-        #self.graphicsView = GraphicsView(self.tab_TuneAndTesting)
-        #self.graphicsView.setObjectName(_fromUtf8("graphicsView"))
-        #self.gridlayout3.addWidget(self.graphicsView, 2, 1, 1, 1)
+        self.horizontalLayout_3 = QtGui.QHBoxLayout()
+        self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))
+        self.btnCurvesSeperate = QtGui.QPushButton(self.tab_TuneAndTesting)
+        self.btnCurvesSeperate.setObjectName(_fromUtf8("btnCurvesSeperate"))
+        self.horizontalLayout_3.addWidget(self.btnCurvesSeperate)
+        self.gridlayout3.addLayout(self.horizontalLayout_3, 2, 0, 5, 4)
+        spacerItem8 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.gridlayout3.addItem(spacerItem8, 7, 0, 1, 1)
         self.tabWidget.addTab(self.tab_TuneAndTesting, _fromUtf8(""))
         self.gridlayout.addWidget(self.tabWidget, 1, 0, 1, 1)
 
@@ -964,9 +969,9 @@ class Ui_PageiPapDriver(object):
         self.cb_enc_sel.setItemText(7, _translate("PageiPapDriver", "AbsEnc", None))
         self.cmdAUXPS.setText(_translate("PageiPapDriver", "Aux Supply 5V", None))
         self.textLabel3_4.setText(_translate("PageiPapDriver", "Indexer", None))
+        self.btnCurvesSeperate.setText(_translate("PageiPapDriver", "Separate Curves", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_TuneAndTesting), _translate("PageiPapDriver", "Tune and testing", None))
 
-from pyqtgraph import GraphicsView
 from Led import Led
 from historiccfgwidget import HistoricCfgWidget
 import icepapcms_rc

@@ -22,9 +22,9 @@ import datetime
 import tempfile
 from historiccfgwidget import HistoricCfgWidget
 
-import numpy as np
 import pyqtgraph as pg
-import time
+from dialogcurves import DialogCurves
+
 
 class PageiPapDriver(QtGui.QWidget):
     """ Widget that manages all the information related to an icepap driver. Configuration, testing and historic configurations """
@@ -172,10 +172,9 @@ class PageiPapDriver(QtGui.QWidget):
         self.pw = pg.PlotWidget()
         self.myCurve = self.pw.plot()
         self.myCurve.setPen({200, 200, 100})
-        self.xArray = np.array([0])
-        self.yArray = np.array([0])
         self.time_array = []
         self.pos_array = []
+        self.arrayDlgCurve = []
         # self.myItem = self.pw.plotItem
         self.ui.gridlayout3.addWidget(self.pw)
 
@@ -209,6 +208,8 @@ class PageiPapDriver(QtGui.QWidget):
         QtCore.QObject.connect(self.sliderTimer,QtCore.SIGNAL("timeout()"),self.resetSlider)
 
         QtCore.QObject.connect(self.ui.cmdCSWITCH,QtCore.SIGNAL("currentIndexChanged(QString)"),self.changeSwitchesSetup)
+
+        QtCore.QObject.connect(self.ui.btnCurvesSeperate, QtCore.SIGNAL("clicked()"), self.addDialogCurves)
 
     def highlightWidget(self, widget):
         # AGAIN, COMMAND WIDGETS ARE ONLY CHECKED IN THE QCOMBOBOX ELIF SECTION
@@ -1188,24 +1189,31 @@ class PageiPapDriver(QtGui.QWidget):
         self.ui.LCDPositionTest.display(position[0])
         self.ui.LCDEncoder.display(position[1])
 
-        #self.myItem = self.pw.plotItem
-        #self.myItem.addItem(y=position[0], x=0)
+        # self.myItem = self.pw.plotItem
+        # self.myItem.addItem(y=position[0], x=0)
 
-        myx = time.time()
-        myy = position[0]
-#        self.xArray.  (np.random.random(4))
-#        self.yArray.append(np.random.random(100))
+        myTime = time.time()
+        myPos = position[0]
 
-        #self.myCurve.setData(y=self.yArray, x=self.xArray)
-
-        self.time_array.append(time.time())
-        self.pos_array.append(position[0])
+        self.time_array.append(myTime)
+        self.pos_array.append(myPos)
         self.pw.plot(y=self.pos_array, x=self.time_array)
 
-        #self.item = pg.PlotDataItem(pen={"color": "FF0", "width": 1})
-        #self.myItem.addItem(self.item)
-        #self.myItem.setData(y=self.pos_array, x=self.time_array)
-        #self.myItem.set
+        # self.item = pg.PlotDataItem(pen={"color": "FF0", "width": 1})
+        # self.myItem.addItem(self.item)
+        # self.myItem.setData(y=self.pos_array, x=self.time_array)
+
+        for dlg in self.arrayDlgCurve:
+            dlg.updateCurves(myTime)
+
+    def addDialogCurves(self):
+        dlg = DialogCurves(self, self.icepap_driver.icepapsystem_name, self.icepap_driver.addr)
+        self.arrayDlgCurve.append(dlg)
+
+    def removeDialogCurves(self):
+        for dlg in self.arrayDlgCurve:
+            if not dlg.isVisible():
+                self.arrayDlgCurve.remove(dlg)
 
     def btnGO_on_click(self):
         new_position = self.ui.txtMvAbsolute.text()
