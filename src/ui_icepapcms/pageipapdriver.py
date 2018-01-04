@@ -170,13 +170,12 @@ class PageiPapDriver(QtGui.QWidget):
 
         # Add a pyqtgraph PlotWidget for displaying motor positions.
         self.pw = pg.PlotWidget()
-        self.myCurve = self.pw.plot()
-        self.myCurve.setPen({200, 200, 100})
+        # self.myCurve = self.pw.plot()
+        # self.myCurve.setPen({200, 200, 100})
         self.time_array = []
         self.pos_array = []
-        self.arrayDlgCurve = []
         # self.myItem = self.pw.plotItem
-        self.ui.gridlayout3.addWidget(self.pw)
+        #self.ui.gridlayout3.addWidget(self.pw)
 
     def signalConnections(self):
         QtCore.QObject.connect(self.ui.btnBlink,QtCore.SIGNAL("pressed()"),self.btnBlink_on_press)
@@ -1189,31 +1188,17 @@ class PageiPapDriver(QtGui.QWidget):
         self.ui.LCDPositionTest.display(position[0])
         self.ui.LCDEncoder.display(position[1])
 
-        # self.myItem = self.pw.plotItem
-        # self.myItem.addItem(y=position[0], x=0)
+        #self.time_array.append(time.time())
+        #self.pos_array.append(position[0])
+        #self.pw.plot(x=self.time_array, y=self.pos_array)
 
-        myTime = time.time()
-        myPos = position[0]
-
-        self.time_array.append(myTime)
-        self.pos_array.append(myPos)
-        self.pw.plot(y=self.pos_array, x=self.time_array)
-
+        # self.myItem.addItem(x=0, y=position[0])
         # self.item = pg.PlotDataItem(pen={"color": "FF0", "width": 1})
         # self.myItem.addItem(self.item)
-        # self.myItem.setData(y=self.pos_array, x=self.time_array)
-
-        for dlg in self.arrayDlgCurve:
-            dlg.updateCurves(myTime)
+        # self.myItem.setData(x=self.time_array, y=self.pos_array)
 
     def addDialogCurves(self):
-        dlg = DialogCurves(self, self.icepap_driver.icepapsystem_name, self.icepap_driver.addr)
-        self.arrayDlgCurve.append(dlg)
-
-    def removeDialogCurves(self):
-        for dlg in self.arrayDlgCurve:
-            if not dlg.isVisible():
-                self.arrayDlgCurve.remove(dlg)
+        DialogCurves(self, self.icepap_driver.icepapsystem_name, self.icepap_driver.addr)
 
     def btnGO_on_click(self):
         new_position = self.ui.txtMvAbsolute.text()
