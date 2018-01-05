@@ -18,21 +18,26 @@ class DialogCurves(QtGui.QDialog):
         self.ui.setupUi(self)
         self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + str(self.icepapAddress))  # Use .name if not empty
         self.show()
+        self.ac = []  # Active curves
         #self.myList = ['AXIS', 'INDEXER', 'EXTERR', 'SHFTENC', 'TGTENC', 'ENCIN', 'INPOS', 'ABSENC', 'MEASURE', 'PARAM', 'CTRLENC', 'MOTOR']
         self.ticker = Qt.QTimer(self)
-        QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
         self.tickInterval = 500  # [milliseconds]
-        self.xAxisTime = 60  # [seconds]
+        self.xTimeLength = 60  # [seconds]
         # Todo: Create an n-dimentional array that includes time and other curves?
         # Todo: Also look at list-of-dicts and dict-of-lists.
-        self.arrayTime = np.empty(self.xAxisTime * 1000 / self.tickInterval)
-        self.arrayAxis = np.empty(self.xAxisTime * 1000 / self.tickInterval)
+        self.arrayTime = np.empty(self.xTimeLength * 1000 / self.tickInterval)
         self.pw = pg.PlotWidget()
         self.vb = self.pw.getViewBox()
         self.vb.disableAutoRange(axis=self.vb.XAxis)
         self.vb.enableAutoRange(axis=self.vb.YAxis)
-        self.curve = self.pw.plot(x=self.arrayTime, y=self.arrayAxis, pen={'color':"FF0", 'width':1})
+        self.arrayAxis = np.empty(self.xTimeLength * 1000 / self.tickInterval)
+        self.arrayShiftEnc = np.empty(self.xTimeLength * 1000 / self.tickInterval)
+        self.arrayTargetEnc = np.empty(self.xTimeLength * 1000 / self.tickInterval)
+        self.curveAxis = self.pw.plot(x=self.arrayTime, y=self.arrayAxis, pen={'color':"FF0", 'width':1})
+        self.curveShiftEnc = self.pw.plot(x=self.arrayTime, y=self.arrayAxis, pen={'color':"F00", 'width':1})
+        self.curveTargetEnc = self.pw.plot(x=self.arrayTime, y=self.arrayAxis, pen={'color':"0F0", 'width':1})
         self.ui.gridLayout.addWidget(self.pw)
+        self.connectSignals()
         self.initCurves()
         #self.arrayPosAxis = []
         #self.arrayPosIndexer = []
@@ -51,40 +56,107 @@ class DialogCurves(QtGui.QDialog):
         #self.arrayEncInPos = []
         #self.arrayEncAbsEnc = []
 
+    def connectSignals(self):
+        QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
+        self.ui.checkBoxAxis.stateChanged.connect(self.signalAxis)
+        self.ui.checkBoxShiftEnc.stateChanged.connect(self.signalShiftEnc)
+        self.ui.checkBoxTgtEnc.stateChanged.connect(self.signalTargetEnc)
+
     def initCurves(self):
         now = time.time()
         self.arrayTime.fill(None)
-        self.arrayAxis.fill(None)
         self.arrayTime[-1] = now
-        try:
-            self.arrayAxis[-1] = float(self.thing.getPositionFromBoard(self.icepapAddress, 'Axis'))
-        except:
-            print('Init error!')
-        #self.curve.setPen({'color':"FF0", 'width':1})
-        self.pw.setXRange(now - self.xAxisTime, now)
-        self.curve.setData(x=self.arrayTime, y=self.arrayAxis)
+        self.pw.setXRange(now - self.xTimeLength, now)
+        self.arrayAxis.fill(None)
+        self.arrayAxis[-1] = 1  # Get some strange warnings if not set to value != 0.
+        self.curveAxis.setData(x=self.arrayTime, y=self.arrayAxis)
         self.ticker.start(self.tickInterval)
+
+    def signalAxis(self, checked):
+        self.arrayAxis.fill(None)
+        if checked == 2:
+            self.ac.append('Axis')
+            try:
+                self.arrayAxis[-1] = float(self.thing.getPositionFromBoard(self.icepapAddress, 'Axis'))
+            except:
+                self.ac.remove('Axis')
+                print('Init error for Axis!')
+        else:
+            if 'Axis' in self.ac: self.ac.remove('Axis')
+        print(self.ac)
+        self.curveAxis.setData(x=self.arrayTime, y=self.arrayAxis)
+
+    def signalShiftEnc(self, checked):
+        self.arrayShiftEnc.fill(None)
+        if checked == 2:
+            self.ac.append('ShftEnc')
+            try:
+                self.arrayShiftEnc[-1] = float(self.thing.getPositionFromBoard(self.icepapAddress, 'ShftEnc'))
+            except:
+                self.ac.remove('ShftEnc')
+                print('Init error for ShftEnc!')
+        else:
+            if 'ShftEnc' in self.ac: self.ac.remove('ShftEnc')
+        print(self.ac)
+        self.curveShiftEnc.setData(x=self.arrayTime, y=self.arrayShiftEnc)
+
+    def signalTargetEnc(self, checked):
+        self.arrayTargetEnc.fill(None)
+        if checked == 2:
+            self.ac.append('TgtEnc')
+            try:
+                self.arrayTargetEnc[-1] = float(self.thing.getPositionFromBoard(self.icepapAddress, 'TgtEnc'))
+            except:
+                self.ac.remove('TgtEnc')
+                print('Init error for TgtEnc!')
+        else:
+            if 'TgtEnc' in self.ac: self.ac.remove('TgtEnc')
+        print(self.ac)
+        self.curveTargetEnc.setData(x=self.arrayTime, y=self.arrayTargetEnc)
 
     def tick(self):
         now = time.time()
-        try:
-            newValAxis = float(self.thing.getPositionFromBoard(self.icepapAddress, 'Axis'))
-        except:
-            print('Failed retrieving value for Axis!')
-
         e1 = np.empty_like(self.arrayTime)
-        e2 = np.empty_like(self.arrayAxis)
         e1[:-1] = self.arrayTime[1:]
-        e2[:-1] = self.arrayAxis[1:]
         e1[-1] = now
-        e2[-1] = newValAxis
         self.arrayTime = e1
-        self.arrayAxis = e2
-        #if self.ui.checkBoxAxis.isChecked():
-        #    curve = self.pw.plot(x=self.arrayTime, y=self.arrayAxis)
-        self.pw.setXRange(now - self.xAxisTime, now)
-        self.curve.setData(x=self.arrayTime, y=self.arrayAxis)
-        # Todo: Try letting array grow and only display last bit. Saves us from the shifting each tick.
+        self.pw.setXRange(now - self.xTimeLength, now)
+
+        if 'Axis' in self.ac:
+            try:
+                newVal = float(self.thing.getPositionFromBoard(self.icepapAddress, 'Axis'))
+            except:
+                print('Failed to update Axis!')
+            e2 = np.empty_like(self.arrayAxis)
+            e2[:-1] = self.arrayAxis[1:]
+            e2[-1] = newVal
+            self.arrayAxis = e2
+            # if self.ui.checkBoxAxis.isChecked():
+            #    curveAxis = self.pw.plot(x=self.arrayTime, y=self.arrayAxis)
+            self.curveAxis.setData(x=self.arrayTime, y=self.arrayAxis)
+            # Todo: Try letting array grow and only display last bit. Saves us from the shifting each tick.
+
+        if 'ShftEnc' in self.ac:
+            try:
+                newVal = float(self.thing.getPositionFromBoard(self.icepapAddress, 'ShftEnc'))
+            except:
+                print('Failed to update ShftEnc!')
+            e2 = np.empty_like(self.arrayShiftEnc)
+            e2[:-1] = self.arrayShiftEnc[1:]
+            e2[-1] = newVal
+            self.arrayShiftEnc = e2
+            self.curveShiftEnc.setData(x=self.arrayTime, y=self.arrayShiftEnc)
+
+        if 'TgtEnc' in self.ac:
+            try:
+                newVal = float(self.thing.getPositionFromBoard(self.icepapAddress, 'TgtEnc'))
+            except:
+                print('Failed to update TgtEnc!')
+            e2 = np.empty_like(self.arrayTargetEnc)
+            e2[:-1] = self.arrayTargetEnc[1:]
+            e2[-1] = newVal
+            self.arrayTargetEnc = e2
+            self.curveTargetEnc.setData(x=self.arrayTime, y=self.arrayTargetEnc)
 
         #p1 = self.thing.getPositionFromBoard(self.icepapAddress, 'AXIS')
         #p2 = self.thing.getPositionFromBoard(self.icepapAddress, 'SHFTENC')
