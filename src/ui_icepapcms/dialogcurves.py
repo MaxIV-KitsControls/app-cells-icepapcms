@@ -2,7 +2,6 @@ from PyQt4 import QtGui, QtCore, Qt
 from ui_dialogcurves import Ui_DialogCurves
 import pyqtgraph as pg
 from lib_icepapcms import IcepapController
-import numpy as np
 import time
 
 
@@ -21,40 +20,27 @@ class DialogCurves(QtGui.QDialog):
         self.ac = []  # Active curves
         #self.myList = ['AXIS', 'INDEXER', 'EXTERR', 'SHFTENC', 'TGTENC', 'ENCIN', 'INPOS', 'ABSENC', 'MEASURE', 'PARAM', 'CTRLENC', 'MOTOR']
         self.ticker = Qt.QTimer(self)
-        self.tickInterval = 500  # [milliseconds]
+        self.tickInterval = 100  # [milliseconds]
         self.xTimeLength = 60  # [seconds]
+        self.numVisible = self.xTimeLength * 1000 / self.tickInterval
         # Todo: Create an n-dimentional array that includes time and other curves?
         # Todo: Also look at list-of-dicts and dict-of-lists.
-        self.arrayTime = np.empty(self.xTimeLength * 1000 / self.tickInterval)
         self.pw = pg.PlotWidget()
         self.vb = self.pw.getViewBox()
         self.vb.disableAutoRange(axis=self.vb.XAxis)
         self.vb.enableAutoRange(axis=self.vb.YAxis)
-        self.arrayAxis = np.empty(self.xTimeLength * 1000 / self.tickInterval)
-        self.arrayShiftEnc = np.empty(self.xTimeLength * 1000 / self.tickInterval)
-        self.arrayTargetEnc = np.empty(self.xTimeLength * 1000 / self.tickInterval)
-        self.curveAxis = self.pw.plot(x=self.arrayTime, y=self.arrayAxis, pen={'color':"FF0", 'width':1})
-        self.curveShiftEnc = self.pw.plot(x=self.arrayTime, y=self.arrayAxis, pen={'color':"F00", 'width':1})
-        self.curveTargetEnc = self.pw.plot(x=self.arrayTime, y=self.arrayAxis, pen={'color':"0F0", 'width':1})
+        self.arrayAxisTime = []
+        self.arrayShiftEncTime = []
+        self.arrayTargetEncTime = []
+        self.arrayAxis = []
+        self.arrayShiftEnc = []
+        self.arrayTargetEnc = []
+        self.curveAxis = self.pw.plot(x=self.arrayAxisTime, y=self.arrayAxis, pen={'color':"FF0", 'width':1})
+        self.curveShiftEnc = self.pw.plot(x=self.arrayShiftEncTime, y=self.arrayShiftEnc, pen={'color':"F00", 'width':1})
+        self.curveTargetEnc = self.pw.plot(x=self.arrayTargetEncTime, y=self.arrayTargetEnc, pen={'color':"0F0", 'width':1})
         self.ui.gridLayout.addWidget(self.pw)
         self.connectSignals()
-        self.initCurves()
-        #self.arrayPosAxis = []
-        #self.arrayPosIndexer = []
-        #self.arrayPosExtErr = []
-        #self.arrayPosShftEnc = []
-        #self.arrayPosTgtEnc = []
-        #self.arrayPosEncIn = []
-        #self.arrayPosInPos = []
-        #self.arrayPosAbsEnc = []
-        #self.arrayEncAxis = []
-        #self.arrayEncIndexer = []
-        #self.arrayEncExtErr = []
-        #self.arrayEncShftEnc = []
-        #self.arrayEncTgtEnc = []
-        #self.arrayEncEncIn = []
-        #self.arrayEncInPos = []
-        #self.arrayEncAbsEnc = []
+        self.ticker.start(self.tickInterval)
 
     def connectSignals(self):
         QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
@@ -62,101 +48,98 @@ class DialogCurves(QtGui.QDialog):
         self.ui.checkBoxShiftEnc.stateChanged.connect(self.signalShiftEnc)
         self.ui.checkBoxTgtEnc.stateChanged.connect(self.signalTargetEnc)
 
-    def initCurves(self):
-        now = time.time()
-        self.arrayTime.fill(None)
-        self.arrayTime[-1] = now
-        self.pw.setXRange(now - self.xTimeLength, now)
-        self.arrayAxis.fill(None)
-        self.arrayAxis[-1] = 1  # Get some strange warnings if not set to value != 0.
-        self.curveAxis.setData(x=self.arrayTime, y=self.arrayAxis)
-        self.ticker.start(self.tickInterval)
-
     def signalAxis(self, checked):
-        self.arrayAxis.fill(None)
         if checked == 2:
-            self.ac.append('Axis')
             try:
-                self.arrayAxis[-1] = float(self.thing.getPositionFromBoard(self.icepapAddress, 'Axis'))
+                if 'Axis' not in self.ac: self.ac.append('Axis')
+                self.arrayAxisTime = [time.time()]
+                self.arrayAxis =[float(self.thing.getPositionFromBoard(self.icepapAddress, 'Axis'))]
             except:
-                self.ac.remove('Axis')
+                if 'Axis' in self.ac: self.ac.remove('Axis')
+                self.arrayAxisTime = []
+                self.arrayAxis = []
                 print('Init error for Axis!')
         else:
             if 'Axis' in self.ac: self.ac.remove('Axis')
+            self.arrayAxisTime = []
+            self.arrayAxis = []
         print(self.ac)
-        self.curveAxis.setData(x=self.arrayTime, y=self.arrayAxis)
+        self.curveAxis.setData(x=self.arrayAxisTime, y=self.arrayAxis)
 
     def signalShiftEnc(self, checked):
-        self.arrayShiftEnc.fill(None)
         if checked == 2:
-            self.ac.append('ShftEnc')
             try:
-                self.arrayShiftEnc[-1] = float(self.thing.getPositionFromBoard(self.icepapAddress, 'ShftEnc'))
+                if 'ShftEnc' not in self.ac: self.ac.append('ShftEnc')
+                self.arrayShiftEncTime = [time.time()]
+                self.arrayShiftEnc =[float(self.thing.getPositionFromBoard(self.icepapAddress, 'ShftEnc'))]
             except:
-                self.ac.remove('ShftEnc')
+                if 'ShftEnc' in self.ac: self.ac.remove('ShftEnc')
+                self.arrayShiftEncTime = []
+                self.arrayShiftEnc = []
                 print('Init error for ShftEnc!')
         else:
             if 'ShftEnc' in self.ac: self.ac.remove('ShftEnc')
+            self.arrayShiftEncTime = []
+            self.arrayShiftEnc = []
         print(self.ac)
-        self.curveShiftEnc.setData(x=self.arrayTime, y=self.arrayShiftEnc)
+        self.curveShiftEnc.setData(x=self.arrayShiftEncTime, y=self.arrayShiftEnc)
 
     def signalTargetEnc(self, checked):
-        self.arrayTargetEnc.fill(None)
         if checked == 2:
-            self.ac.append('TgtEnc')
             try:
-                self.arrayTargetEnc[-1] = float(self.thing.getPositionFromBoard(self.icepapAddress, 'TgtEnc'))
+                if 'TgtEnc' not in self.ac: self.ac.append('TgtEnc')
+                self.arrayTargetEncTime = [time.time()]
+                self.arrayTargetEnc =[float(self.thing.getPositionFromBoard(self.icepapAddress, 'TgtEnc'))]
             except:
-                self.ac.remove('TgtEnc')
+                if 'TgtEnc' in self.ac: self.ac.remove('TgtEnc')
+                self.arrayTargetEncTime = []
+                self.arrayTargetEnc = []
                 print('Init error for TgtEnc!')
         else:
             if 'TgtEnc' in self.ac: self.ac.remove('TgtEnc')
+            self.arrayTargetEncTime = []
+            self.arrayTargetEnc = []
         print(self.ac)
-        self.curveTargetEnc.setData(x=self.arrayTime, y=self.arrayTargetEnc)
+        self.curveTargetEnc.setData(x=self.arrayTargetEncTime, y=self.arrayTargetEnc)
 
     def tick(self):
         now = time.time()
-        e1 = np.empty_like(self.arrayTime)
-        e1[:-1] = self.arrayTime[1:]
-        e1[-1] = now
-        self.arrayTime = e1
         self.pw.setXRange(now - self.xTimeLength, now)
 
         if 'Axis' in self.ac:
             try:
-                newVal = float(self.thing.getPositionFromBoard(self.icepapAddress, 'Axis'))
+                self.arrayAxisTime.append(now)
+                self.arrayAxis.append(float(self.thing.getPositionFromBoard(self.icepapAddress, 'Axis')))
             except:
                 print('Failed to update Axis!')
-            e2 = np.empty_like(self.arrayAxis)
-            e2[:-1] = self.arrayAxis[1:]
-            e2[-1] = newVal
-            self.arrayAxis = e2
             # if self.ui.checkBoxAxis.isChecked():
             #    curveAxis = self.pw.plot(x=self.arrayTime, y=self.arrayAxis)
-            self.curveAxis.setData(x=self.arrayTime, y=self.arrayAxis)
-            # Todo: Try letting array grow and only display last bit. Saves us from the shifting each tick.
+            if len(self.arrayAxisTime) < self.numVisible:
+                self.curveAxis.setData(x=self.arrayAxisTime, y=self.arrayAxis)
+            else:
+                self.curveAxis.setData(x=self.arrayAxisTime[-self.numVisible:], y=self.arrayAxis[-self.numVisible:])
 
         if 'ShftEnc' in self.ac:
             try:
-                newVal = float(self.thing.getPositionFromBoard(self.icepapAddress, 'ShftEnc'))
+                self.arrayShiftEncTime.append(now)
+                self.arrayShiftEnc.append(float(self.thing.getPositionFromBoard(self.icepapAddress, 'ShftEnc')))
             except:
                 print('Failed to update ShftEnc!')
-            e2 = np.empty_like(self.arrayShiftEnc)
-            e2[:-1] = self.arrayShiftEnc[1:]
-            e2[-1] = newVal
-            self.arrayShiftEnc = e2
-            self.curveShiftEnc.setData(x=self.arrayTime, y=self.arrayShiftEnc)
+            if len(self.arrayShiftEncTime) < self.numVisible:
+                self.curveShiftEnc.setData(x=self.arrayShiftEncTime, y=self.arrayShiftEnc)
+            else:
+                self.curveShiftEnc.setData(x=self.arrayShiftEncTime[-self.numVisible:], y=self.arrayShiftEnc[-self.numVisible:])
 
         if 'TgtEnc' in self.ac:
             try:
-                newVal = float(self.thing.getPositionFromBoard(self.icepapAddress, 'TgtEnc'))
+                self.arrayTargetEncTime.append(now)
+                self.arrayTargetEnc.append(float(self.thing.getPositionFromBoard(self.icepapAddress, 'TgtEnc')))
             except:
                 print('Failed to update TgtEnc!')
-            e2 = np.empty_like(self.arrayTargetEnc)
-            e2[:-1] = self.arrayTargetEnc[1:]
-            e2[-1] = newVal
-            self.arrayTargetEnc = e2
-            self.curveTargetEnc.setData(x=self.arrayTime, y=self.arrayTargetEnc)
+            if len(self.arrayTargetEncTime) < self.numVisible:
+                self.curveTargetEnc.setData(x=self.arrayTargetEncTime, y=self.arrayTargetEnc)
+            else:
+                self.curveTargetEnc.setData(x=self.arrayTargetEncTime[-self.numVisible:], y=self.arrayTargetEnc[-self.numVisible:])
 
         #p1 = self.thing.getPositionFromBoard(self.icepapAddress, 'AXIS')
         #p2 = self.thing.getPositionFromBoard(self.icepapAddress, 'SHFTENC')
