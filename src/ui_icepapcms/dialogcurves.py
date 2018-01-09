@@ -5,13 +5,13 @@ from lib_icepapcms import IcepapController
 import time
 
 
-class CurveItem():
+class CurveItem:
 
     def __init__(self, plotWidget, source, myColor, myWidth):
         self.source = source
         self.arrayTime = []
         self.arrayVal = []
-        self.curve = plotWidget.plot(x=self.arrayTime, y=self.arrayVal, pen={'color':myColor, 'width':myWidth})
+        self.curve = plotWidget.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': myColor, 'width': myWidth})
 
 
 class DialogCurves(QtGui.QDialog):
@@ -27,7 +27,6 @@ class DialogCurves(QtGui.QDialog):
         self.ticker = Qt.QTimer(self)
         self.tickInterval = 100  # [milliseconds]
         self.xTimeLength = 60  # [seconds]
-        self.numVisible = self.xTimeLength * 1000 / self.tickInterval
         self.pw = pg.PlotWidget()
         self.vb = self.pw.getViewBox()
         self.vb.disableAutoRange(axis=self.vb.XAxis)
@@ -49,31 +48,43 @@ class DialogCurves(QtGui.QDialog):
         self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure.checkState(), 'Measure', "FF00FF", 1))    # Fuchsia
         self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc.checkState(), 'CtrlEnc', "800000", 1))    # Maroon
         self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor.checkState(), 'Motor', "996633", 1))          # <Brown>
+        self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1.checkState(), 'Delta1', "FFCC00", 2))       # <Dark yellow>
+        self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2.checkState(), 'Delta2', "99FF99", 2))       # <Light green>
 
-    def radioButtonsToggled(self, checked):
+    def getVal(self, source):
+        f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
+        ok = True
+        val = 0.0
+        try:
+            if source == 'Delta1':
+                val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'TgtEnc'))
+            elif source == 'Delta2':
+                val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'Motor'))
+            else:
+                val = float(f(self.icepapAddress, source))
+        except:
+            ok = False
+        return ok, val
+
+    def radioButtonsToggled(self):
         for curveItem in self.curveItems:
             curveItem.arrayTime = []
             curveItem.arrayVal = []
 
-    def selectedCurve(self, myCheckState, mySource, myColor, myWidth):
-        if myCheckState == 2:
-            curveItem = CurveItem(self.pw, mySource, myColor, myWidth)
-            self.curveItems.append(curveItem)
-            try:
+    def selectedCurve(self, checked, source, myColor, myWidth):
+        if checked == 2:
+            (ok, val) = self.getVal(source)
+            if ok == True:
+                curveItem = CurveItem(self.pw, source, myColor, myWidth)
+                self.curveItems.append(curveItem)
                 curveItem.arrayTime = [time.time()]
-                if self.ui.radioButtonAxis.isChecked():
-                    curveItem.arrayVal = [float(self.driver.getPositionFromBoard(self.icepapAddress, mySource))]
-                else:
-                    curveItem.arrayVal = [float(self.driver.getEncoder(self.icepapAddress, mySource))]
+                curveItem.arrayVal = [val]
                 curveItem.curve.setData(x=curveItem.arrayTime, y=curveItem.arrayVal)
-            except:
-                if curveItem in self.curveItems:
-                    self.vb.removeItem(curveItem.curve)
-                    self.curveItems.remove(curveItem)
-                print('Init error for ' + mySource + '!')
+            else:
+                print('Failed to create curve for ' + source + '!')
         else:
             for curveItem in self.curveItems:
-                if curveItem.source == mySource:
+                if curveItem.source == source:
                     self.vb.removeItem(curveItem.curve)
                     self.curveItems.remove(curveItem)
 
@@ -82,20 +93,17 @@ class DialogCurves(QtGui.QDialog):
         self.pw.setXRange(now - self.xTimeLength, now)
 
         for curveItem in self.curveItems:
-            curveItem.arrayTime.append(now)
-            val = 0.0
-            try:
-                if self.ui.radioButtonAxis.isChecked():
-                    val = float(self.driver.getPositionFromBoard(self.icepapAddress, curveItem.source))
+            (ok, val) = self.getVal(curveItem.source)
+            if ok == True:
+                curveItem.arrayTime.append(now)
+                curveItem.arrayVal.append(val)
+                numVisibleTicks = self.xTimeLength * 1000 / self.tickInterval
+                if len(curveItem.arrayTime) < numVisibleTicks:
+                    curveItem.curve.setData(x=curveItem.arrayTime, y=curveItem.arrayVal)
                 else:
-                    val = float(self.driver.getEncoder(self.icepapAddress, curveItem.source))
-            except:
-                val = -1.0
-                print('Failed to update ' + curveItem.source + '!')
-            curveItem.arrayVal.append(val)
-            if len(curveItem.arrayTime) < self.numVisible:
-                curveItem.curve.setData(x=curveItem.arrayTime, y=curveItem.arrayVal)
+                    curveItem.curve.setData(x=curveItem.arrayTime[-numVisibleTicks:],
+                                            y=curveItem.arrayVal[-numVisibleTicks:])
             else:
-                curveItem.curve.setData(x=curveItem.arrayTime[-self.numVisible:], y=curveItem.arrayVal[-self.numVisible:])
+                print('Failed to update curve for ' + curveItem.source + '!')
 
         self.ticker.start(self.tickInterval)
