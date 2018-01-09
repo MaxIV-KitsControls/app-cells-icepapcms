@@ -208,7 +208,7 @@ class PageiPapDriver(QtGui.QWidget):
 
         QtCore.QObject.connect(self.ui.cmdCSWITCH,QtCore.SIGNAL("currentIndexChanged(QString)"),self.changeSwitchesSetup)
 
-        QtCore.QObject.connect(self.ui.btnCurvesSeperate, QtCore.SIGNAL("clicked()"), self.addDialogCurves)
+        QtCore.QObject.connect(self.ui.btnCurves, QtCore.SIGNAL("clicked()"), self.addDialogCurves)
 
     def highlightWidget(self, widget):
         # AGAIN, COMMAND WIDGETS ARE ONLY CHECKED IN THE QCOMBOBOX ELIF SECTION
