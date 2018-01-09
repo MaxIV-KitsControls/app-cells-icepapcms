@@ -19,15 +19,11 @@ class DialogCurves(QtGui.QDialog):
     def __init__(self, parent, system_name, address):
         QtGui.QDialog.__init__(self, parent)
         self.ui = Ui_DialogCurves()
-        # self.theIcepapController = IcepapController()
-        self.thing = IcepapController().iPaps[system_name]
-        # self.thing = self.theIcepapController.iPaps[self.icepapSystemName]
+        self.driver = IcepapController().iPaps[system_name]
         self.icepapAddress = address
         self.ui.setupUi(self)
-        self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + str(self.icepapAddress))  # Use .name if not empty
+        self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + str(self.icepapAddress))  # Todo: Use .name if not empty
         self.show()
-        self.ac = []  # Active curves
-        #self.myList = ['AXIS', 'INDEXER', 'EXTERR', 'SHFTENC', 'TGTENC', 'ENCIN', 'INPOS', 'ABSENC', 'MEASURE', 'PARAM', 'CTRLENC', 'MOTOR']
         self.ticker = Qt.QTimer(self)
         self.tickInterval = 100  # [milliseconds]
         self.xTimeLength = 60  # [seconds]
@@ -43,15 +39,21 @@ class DialogCurves(QtGui.QDialog):
 
     def connectSignals(self):
         QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
-        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis.checkState(), 'Axis', "FFFF00", 1))  # Yellow
+        self.ui.radioButtonAxis.toggled.connect(self.radioButtonsToggled)
+        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis.checkState(), 'Axis', "FFFF00", 1))             # Yellow
         self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc.checkState(), 'ShftEnc', "FF0000", 1))  # Red
-        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc.checkState(), 'TgtEnc', "00FF00", 1))  # Lime
-        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn.checkState(), 'EncIn', "FFFFFF", 1))  # White
-        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos.checkState(), 'InPos', "0000FF", 1))  # Blue
-        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc.checkState(), 'AbsEnc', "00FFFF", 1))  # Aqua
-        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure.checkState(), 'Measure', "FF00FF", 1))  # Fuchsia
-        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc.checkState(), 'CtrlEnc', "800000", 1))  # Maroon
-        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor.checkState(), 'Motor', "996633", 1))  # <Brown>
+        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc.checkState(), 'TgtEnc', "00FF00", 1))       # Lime
+        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn.checkState(), 'EncIn', "FFFFFF", 1))          # White
+        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos.checkState(), 'InPos', "0000FF", 1))          # Blue
+        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc.checkState(), 'AbsEnc', "00FFFF", 1))       # Aqua
+        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure.checkState(), 'Measure', "FF00FF", 1))    # Fuchsia
+        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc.checkState(), 'CtrlEnc', "800000", 1))    # Maroon
+        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor.checkState(), 'Motor', "996633", 1))          # <Brown>
+
+    def radioButtonsToggled(self, checked):
+        for curveItem in self.curveItems:
+            curveItem.arrayTime = []
+            curveItem.arrayVal = []
 
     def selectedCurve(self, myCheckState, mySource, myColor, myWidth):
         if myCheckState == 2:
@@ -59,7 +61,10 @@ class DialogCurves(QtGui.QDialog):
             self.curveItems.append(curveItem)
             try:
                 curveItem.arrayTime = [time.time()]
-                curveItem.arrayVal = [float(self.thing.getPositionFromBoard(self.icepapAddress, mySource))]
+                if self.ui.radioButtonAxis.isChecked():
+                    curveItem.arrayVal = [float(self.driver.getPositionFromBoard(self.icepapAddress, mySource))]
+                else:
+                    curveItem.arrayVal = [float(self.driver.getEncoder(self.icepapAddress, mySource))]
                 curveItem.curve.setData(x=curveItem.arrayTime, y=curveItem.arrayVal)
             except:
                 if curveItem in self.curveItems:
@@ -78,16 +83,19 @@ class DialogCurves(QtGui.QDialog):
 
         for curveItem in self.curveItems:
             curveItem.arrayTime.append(now)
+            val = 0.0
             try:
-                curveItem.arrayVal.append(float(self.thing.getPositionFromBoard(self.icepapAddress, curveItem.source)))
+                if self.ui.radioButtonAxis.isChecked():
+                    val = float(self.driver.getPositionFromBoard(self.icepapAddress, curveItem.source))
+                else:
+                    val = float(self.driver.getEncoder(self.icepapAddress, curveItem.source))
             except:
+                val = -1.0
                 print('Failed to update ' + curveItem.source + '!')
+            curveItem.arrayVal.append(val)
             if len(curveItem.arrayTime) < self.numVisible:
                 curveItem.curve.setData(x=curveItem.arrayTime, y=curveItem.arrayVal)
             else:
                 curveItem.curve.setData(x=curveItem.arrayTime[-self.numVisible:], y=curveItem.arrayVal[-self.numVisible:])
-
-        #p1 = self.thing.getPositionFromBoard(self.icepapAddress, 'AXIS')
-        #e1 = self.thing.getEncoder(self.icepapAddress, 'AXIS')
 
         self.ticker.start(self.tickInterval)
