@@ -7,22 +7,23 @@ import time
 
 class CurveItem:
 
-    def __init__(self, plotWidget, source, myColor, myWidth):
+    def __init__(self, widget, source, col, width):
         self.source = source
         self.arrayTime = []
         self.arrayVal = []
-        self.curve = plotWidget.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': myColor, 'width': myWidth})
+        self.curve = widget.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
 
 
 class DialogCurves(QtGui.QDialog):
 
-    def __init__(self, parent, system_name, address):
+    def __init__(self, parent, system_name, address, name):
         QtGui.QDialog.__init__(self, parent)
         self.ui = Ui_DialogCurves()
         self.driver = IcepapController().iPaps[system_name]
         self.icepapAddress = address
         self.ui.setupUi(self)
-        self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + str(self.icepapAddress))  # Todo: Use .name if not empty
+        driver_name = name if name else str(self.icepapAddress)
+        self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + driver_name)
         self.show()
         self.ticker = Qt.QTimer(self)
         self.tickInterval = 100  # [milliseconds]
@@ -33,23 +34,39 @@ class DialogCurves(QtGui.QDialog):
         self.vb.enableAutoRange(axis=self.vb.YAxis)
         self.curveItems = []
         self.ui.gridLayout.addWidget(self.pw)
+        self.colorAxis = QtGui.QColor(255, 255, 0)       # Yellow
+        self.colorShftEnc = QtGui.QColor(255, 0, 0)      # Red
+        self.colorTgtEnc = QtGui.QColor(0, 255, 0)       # Lime
+        self.colorEncIn = QtGui.QColor(255, 255, 255)    # White
+        self.colorInPos = QtGui.QColor(51, 153, 255)     # <Light blue>
+        self.colorAbsEnc = QtGui.QColor(0, 255, 255)     # Aqua
+        self.colorMeasure = QtGui.QColor(255, 0, 255)    # Fuchsia
+        self.colorCtrlEnc = QtGui.QColor(255, 153, 204)  # <Pink>
+        self.colorMotor = QtGui.QColor(204, 153, 102)    # <Light brown>
+        self.colorDelta1 = QtGui.QColor(255, 204, 0)     # <Dark yellow>
+        self.colorDelta2 = QtGui.QColor(153, 255, 153)   # <Light green>
         self.connectSignals()
         self.ticker.start(self.tickInterval)
 
     def connectSignals(self):
         QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
         self.ui.radioButtonAxis.toggled.connect(self.radioButtonsToggled)
-        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis.checkState(), 'Axis', "FFFF00", 1))             # Yellow
-        self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc.checkState(), 'ShftEnc', "FF0000", 1))  # Red
-        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc.checkState(), 'TgtEnc', "00FF00", 1))       # Lime
-        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn.checkState(), 'EncIn', "FFFFFF", 1))          # White
-        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos.checkState(), 'InPos', "0000FF", 1))          # Blue
-        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc.checkState(), 'AbsEnc', "00FFFF", 1))       # Aqua
-        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure.checkState(), 'Measure', "FF00FF", 1))    # Fuchsia
-        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc.checkState(), 'CtrlEnc', "800000", 1))    # Maroon
-        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor.checkState(), 'Motor', "996633", 1))          # <Brown>
-        self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1.checkState(), 'Delta1', "FFCC00", 2))       # <Dark yellow>
-        self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2.checkState(), 'Delta2', "99FF99", 2))       # <Light green>
+        #self.ui.checkBoxAxis.setPalette(QtGui.QPalette(self.colorAxis))
+        self.ui.groupBoxCurves.setStyleSheet("background-color: rgb(0, 0, 0)")
+        #self.ui.checkBoxAxis.setStyleSheet("color: rgb(255, 255, 0)")
+        #self.ui.checkBoxAxis.setStyleSheet("color: self.colorAxis")
+        #self.ui.checkBoxAxis.setStyleSheet(self.colorAxis)
+        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis, 'Axis', 1))
+        self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc, 'ShftEnc', 1))
+        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc, 'TgtEnc', 1))
+        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn, 'EncIn', 1))
+        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos, 'InPos', 1))
+        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc, 'AbsEnc', 1))
+        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure, 'Measure', 1))
+        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc, 'CtrlEnc', 1))
+        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor, 'Motor', 1))
+        self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1, 'Delta1', 2))
+        self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2, 'Delta2', 2))
 
     def getVal(self, source):
         f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
@@ -71,39 +88,40 @@ class DialogCurves(QtGui.QDialog):
             curveItem.arrayTime = []
             curveItem.arrayVal = []
 
-    def selectedCurve(self, checked, source, myColor, myWidth):
+    def selectedCurve(self, cb, source, width):
+        checked = cb.checkState()
         if checked == 2:
             (ok, val) = self.getVal(source)
-            if ok == True:
-                curveItem = CurveItem(self.pw, source, myColor, myWidth)
-                self.curveItems.append(curveItem)
-                curveItem.arrayTime = [time.time()]
-                curveItem.arrayVal = [val]
-                curveItem.curve.setData(x=curveItem.arrayTime, y=curveItem.arrayVal)
+            if ok:
+                col = cb.palette().color(cb.palette().Active, cb.palette().Text)
+                ci = CurveItem(self.pw, source, col, width)
+                self.curveItems.append(ci)
+                ci.arrayTime = [time.time()]
+                ci.arrayVal = [val]
+                ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
             else:
                 print('Failed to create curve for ' + source + '!')
         else:
-            for curveItem in self.curveItems:
-                if curveItem.source == source:
-                    self.vb.removeItem(curveItem.curve)
-                    self.curveItems.remove(curveItem)
+            for ci in self.curveItems:
+                if ci.source == source:
+                    self.vb.removeItem(ci.curve)
+                    self.curveItems.remove(ci)
 
     def tick(self):
         now = time.time()
         self.pw.setXRange(now - self.xTimeLength, now)
 
-        for curveItem in self.curveItems:
-            (ok, val) = self.getVal(curveItem.source)
-            if ok == True:
-                curveItem.arrayTime.append(now)
-                curveItem.arrayVal.append(val)
+        for ci in self.curveItems:
+            (ok, val) = self.getVal(ci.source)
+            if ok:
+                ci.arrayTime.append(now)
+                ci.arrayVal.append(val)
                 numVisibleTicks = self.xTimeLength * 1000 / self.tickInterval
-                if len(curveItem.arrayTime) < numVisibleTicks:
-                    curveItem.curve.setData(x=curveItem.arrayTime, y=curveItem.arrayVal)
+                if len(ci.arrayTime) < numVisibleTicks:
+                    ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
                 else:
-                    curveItem.curve.setData(x=curveItem.arrayTime[-numVisibleTicks:],
-                                            y=curveItem.arrayVal[-numVisibleTicks:])
+                    ci.curve.setData(x=ci.arrayTime[-numVisibleTicks:], y=ci.arrayVal[-numVisibleTicks:])
             else:
-                print('Failed to update curve for ' + curveItem.source + '!')
+                print('Failed to update curve for ' + ci.source + '!')
 
         self.ticker.start(self.tickInterval)

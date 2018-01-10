@@ -1198,7 +1198,7 @@ class PageiPapDriver(QtGui.QWidget):
         # self.myItem.setData(x=self.time_array, y=self.pos_array)
 
     def addDialogCurves(self):
-        DialogCurves(self, self.icepap_driver.icepapsystem_name, self.icepap_driver.addr)
+        DialogCurves(self, self.icepap_driver.icepapsystem_name, self.icepap_driver.addr, self.icepap_driver.name)
 
     def btnGO_on_click(self):
         new_position = self.ui.txtMvAbsolute.text()
