@@ -34,39 +34,30 @@ class DialogCurves(QtGui.QDialog):
         self.vb.enableAutoRange(axis=self.vb.YAxis)
         self.curveItems = []
         self.ui.gridLayout.addWidget(self.pw)
-        self.colorAxis = QtGui.QColor(255, 255, 0)       # Yellow
-        self.colorShftEnc = QtGui.QColor(255, 0, 0)      # Red
-        self.colorTgtEnc = QtGui.QColor(0, 255, 0)       # Lime
-        self.colorEncIn = QtGui.QColor(255, 255, 255)    # White
-        self.colorInPos = QtGui.QColor(51, 153, 255)     # <Light blue>
-        self.colorAbsEnc = QtGui.QColor(0, 255, 255)     # Aqua
-        self.colorMeasure = QtGui.QColor(255, 0, 255)    # Fuchsia
-        self.colorCtrlEnc = QtGui.QColor(255, 153, 204)  # <Pink>
-        self.colorMotor = QtGui.QColor(204, 153, 102)    # <Light brown>
-        self.colorDelta1 = QtGui.QColor(255, 204, 0)     # <Dark yellow>
-        self.colorDelta2 = QtGui.QColor(153, 255, 153)   # <Light green>
+        self.setCheckBoxBackground()
         self.connectSignals()
         self.ticker.start(self.tickInterval)
 
     def connectSignals(self):
         QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
         self.ui.radioButtonAxis.toggled.connect(self.radioButtonsToggled)
-        #self.ui.checkBoxAxis.setPalette(QtGui.QPalette(self.colorAxis))
-        self.ui.groupBoxCurves.setStyleSheet("background-color: rgb(0, 0, 0)")
-        #self.ui.checkBoxAxis.setStyleSheet("color: rgb(255, 255, 0)")
-        #self.ui.checkBoxAxis.setStyleSheet("color: self.colorAxis")
-        #self.ui.checkBoxAxis.setStyleSheet(self.colorAxis)
-        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis, 'Axis', 1))
-        self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc, 'ShftEnc', 1))
-        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc, 'TgtEnc', 1))
-        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn, 'EncIn', 1))
-        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos, 'InPos', 1))
-        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc, 'AbsEnc', 1))
-        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure, 'Measure', 1))
-        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc, 'CtrlEnc', 1))
-        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor, 'Motor', 1))
-        self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1, 'Delta1', 2))
-        self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2, 'Delta2', 2))
+        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis, 'Axis'))
+        self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc, 'ShftEnc'))
+        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc, 'TgtEnc'))
+        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn, 'EncIn'))
+        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos, 'InPos'))
+        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc, 'AbsEnc'))
+        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure, 'Measure'))
+        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc, 'CtrlEnc'))
+        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor, 'Motor'))
+        self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1, 'Delta1'))
+        self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2, 'Delta2'))
+
+    def setCheckBoxBackground(self):
+        self.ui.groupBoxCurves.setAutoFillBackground(True)
+        gbp = self.ui.groupBoxCurves.palette()
+        gbp.setColor(self.ui.groupBoxCurves.backgroundRole(), QtGui.QColor.fromRgb(0, 0, 0))
+        self.ui.groupBoxCurves.setPalette(gbp)
 
     def getVal(self, source):
         f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
@@ -88,13 +79,14 @@ class DialogCurves(QtGui.QDialog):
             curveItem.arrayTime = []
             curveItem.arrayVal = []
 
-    def selectedCurve(self, cb, source, width):
+    def selectedCurve(self, cb, source):
         checked = cb.checkState()
         if checked == 2:
             (ok, val) = self.getVal(source)
             if ok:
-                col = cb.palette().color(cb.palette().Active, cb.palette().Text)
-                ci = CurveItem(self.pw, source, col, width)
+                col = cb.palette().color(cb.palette().Active, cb.palette().WindowText)
+                w = 2 if source == 'Delta1' or source == 'Delta2' else 1
+                ci = CurveItem(self.pw, source, col, w)
                 self.curveItems.append(ci)
                 ci.arrayTime = [time.time()]
                 ci.arrayVal = [val]
@@ -116,11 +108,11 @@ class DialogCurves(QtGui.QDialog):
             if ok:
                 ci.arrayTime.append(now)
                 ci.arrayVal.append(val)
-                numVisibleTicks = self.xTimeLength * 1000 / self.tickInterval
-                if len(ci.arrayTime) < numVisibleTicks:
+                count = self.xTimeLength * 1000 / self.tickInterval
+                if len(ci.arrayTime) < count:
                     ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
                 else:
-                    ci.curve.setData(x=ci.arrayTime[-numVisibleTicks:], y=ci.arrayVal[-numVisibleTicks:])
+                    ci.curve.setData(x=ci.arrayTime[-count:], y=ci.arrayVal[-count:])
             else:
                 print('Failed to update curve for ' + ci.source + '!')
 
