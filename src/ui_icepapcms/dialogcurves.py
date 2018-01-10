@@ -52,6 +52,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor, 'Motor'))
         self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1, 'Delta1'))
         self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2, 'Delta2'))
+        self.ui.buttonPause.pressed.connect(self.pauseButtonPressed)
 
     def setCheckBoxBackground(self):
         self.ui.groupBoxCurves.setAutoFillBackground(True)
@@ -98,6 +99,14 @@ class DialogCurves(QtGui.QDialog):
                 if ci.source == source:
                     self.vb.removeItem(ci.curve)
                     self.curveItems.remove(ci)
+
+    def pauseButtonPressed(self):
+        if self.ticker.isActive():
+            self.ticker.stop()
+            self.ui.buttonPause.setText('Run')
+        else:
+            self.ticker.start(self.tickInterval)
+            self.ui.buttonPause.setText('Pause')
 
     def tick(self):
         now = time.time()

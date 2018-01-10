@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Wed Jan 10 11:19:05 2018
+# Created: Wed Jan 10 11:53:21 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,10 +26,10 @@ except AttributeError:
 class Ui_DialogCurves(object):
     def setupUi(self, DialogCurves):
         DialogCurves.setObjectName(_fromUtf8("DialogCurves"))
-        DialogCurves.resize(641, 382)
+        DialogCurves.resize(641, 418)
         DialogCurves.setMinimumSize(QtCore.QSize(50, 0))
         self.gridLayoutWidget = QtGui.QWidget(DialogCurves)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 491, 361))
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 491, 401))
         self.gridLayoutWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
         self.gridLayout = QtGui.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setSizeConstraint(QtGui.QLayout.SetDefaultConstraint)
@@ -317,6 +317,9 @@ class Ui_DialogCurves(object):
         palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Text, brush)
         self.checkBoxEncIn.setPalette(palette)
         self.checkBoxEncIn.setObjectName(_fromUtf8("checkBoxEncIn"))
+        self.buttonPause = QtGui.QPushButton(DialogCurves)
+        self.buttonPause.setGeometry(QtCore.QRect(510, 380, 121, 28))
+        self.buttonPause.setObjectName(_fromUtf8("buttonPause"))
 
         self.retranslateUi(DialogCurves)
         QtCore.QMetaObject.connectSlotsByName(DialogCurves)
@@ -338,4 +341,5 @@ class Ui_DialogCurves(object):
         self.checkBoxAxis.setText(_translate("DialogCurves", "Axis", None))
         self.checkBoxCtrlEnc.setText(_translate("DialogCurves", "CtrlEnc", None))
         self.checkBoxEncIn.setText(_translate("DialogCurves", "EncIn", None))
+        self.buttonPause.setText(_translate("DialogCurves", "Pause", None))
 

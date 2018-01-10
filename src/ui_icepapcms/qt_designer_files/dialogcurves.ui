@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>641</width>
-    <height>382</height>
+    <height>418</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -25,7 +25,7 @@
      <x>10</x>
      <y>10</y>
      <width>491</width>
-     <height>361</height>
+     <height>401</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
@@ -978,6 +978,19 @@
      <string>EncIn</string>
     </property>
    </widget>
+  </widget>
+  <widget class="QPushButton" name="buttonPause">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>380</y>
+     <width>121</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Pause</string>
+   </property>
   </widget>
  </widget>
  <resources/>
