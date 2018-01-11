@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Wed Jan 10 11:53:21 2018
+# Created: Thu Jan 11 11:53:14 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -63,6 +63,7 @@ class Ui_DialogCurves(object):
         brush.setStyle(QtCore.Qt.SolidPattern)
         palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.Text, brush)
         self.groupBoxCurves.setPalette(palette)
+        self.groupBoxCurves.setAutoFillBackground(True)
         self.groupBoxCurves.setObjectName(_fromUtf8("groupBoxCurves"))
         self.checkBoxDelta2 = QtGui.QCheckBox(self.groupBoxCurves)
         self.checkBoxDelta2.setGeometry(QtCore.QRect(10, 262, 119, 17))

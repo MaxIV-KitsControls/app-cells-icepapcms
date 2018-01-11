@@ -55,7 +55,6 @@ class DialogCurves(QtGui.QDialog):
         self.ui.buttonPause.pressed.connect(self.pauseButtonPressed)
 
     def setCheckBoxBackground(self):
-        self.ui.groupBoxCurves.setAutoFillBackground(True)
         gbp = self.ui.groupBoxCurves.palette()
         gbp.setColor(self.ui.groupBoxCurves.backgroundRole(), QtGui.QColor.fromRgb(0, 0, 0))
         self.ui.groupBoxCurves.setPalette(gbp)
