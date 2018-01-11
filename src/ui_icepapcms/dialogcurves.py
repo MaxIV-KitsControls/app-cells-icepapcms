@@ -22,8 +22,7 @@ class DialogCurves(QtGui.QDialog):
         self.driver = IcepapController().iPaps[system_name]
         self.icepapAddress = address
         self.ui.setupUi(self)
-        driver_name = name if name else str(self.icepapAddress)
-        self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + driver_name)
+        self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + str(self.icepapAddress) + ' ' + name)
         self.show()
         self.ticker = Qt.QTimer(self)
         self.tickInterval = 100  # [milliseconds]
@@ -118,10 +117,10 @@ class DialogCurves(QtGui.QDialog):
                 ci.arrayTime.append(now)
                 ci.arrayVal.append(val)
                 count = self.xTimeLength * 1000 / self.tickInterval
-                if len(ci.arrayTime) < count:
-                    ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
-                else:
-                    ci.curve.setData(x=ci.arrayTime[-count:], y=ci.arrayVal[-count:])
+                if len(ci.arrayTime) > 1000 * count:
+                    ci.arrayTime = ci.arrayTime[-(100 * count):]
+                    ci.arrayVal = ci.arrayVal[-(100 * count):]
+                ci.curve.setData(x=ci.arrayTime[-(100 * count):], y=ci.arrayVal[-(100 * count):])
             else:
                 print('Failed to update curve for ' + ci.source + '!')
 
