@@ -34,7 +34,6 @@ class DialogCurves(QtGui.QDialog):
         self.vb.enableAutoRange(axis=self.vb.YAxis)
         self.curveItems = []
         self.ui.gridLayout.addWidget(self.pw)
-        self.setCheckBoxBackground()
         self.connectSignals()
         self.ticker.start(self.tickInterval)
 
@@ -53,11 +52,6 @@ class DialogCurves(QtGui.QDialog):
         self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1, 'Delta1'))
         self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2, 'Delta2'))
         self.ui.buttonPause.pressed.connect(self.pauseButtonPressed)
-
-    def setCheckBoxBackground(self):
-        gbp = self.ui.groupBoxCurves.palette()
-        gbp.setColor(self.ui.groupBoxCurves.backgroundRole(), QtGui.QColor.fromRgb(0, 0, 0))
-        self.ui.groupBoxCurves.setPalette(gbp)
 
     def getVal(self, source):
         f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
