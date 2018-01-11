@@ -24,6 +24,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.setupUi(self)
         self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + str(self.icepapAddress) + ' ' + name)
         self.show()
+        self.refTime = time.time()
         self.ticker = Qt.QTimer(self)
         self.tickInterval = 100  # [milliseconds]
         self.xTimeLength = 60  # [seconds]
@@ -75,6 +76,7 @@ class DialogCurves(QtGui.QDialog):
         return ok, val
 
     def radioButtonsToggled(self):
+        self.refTime = time.time()
         for curveItem in self.curveItems:
             curveItem.arrayTime = []
             curveItem.arrayVal = []
@@ -88,7 +90,7 @@ class DialogCurves(QtGui.QDialog):
                 w = 2 if source == 'Delta1' or source == 'Delta2' else 1
                 ci = CurveItem(self.pw, source, col, w)
                 self.curveItems.append(ci)
-                ci.arrayTime = [time.time()]
+                ci.arrayTime = [time.time() - self.refTime]
                 ci.arrayVal = [val]
                 ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
             else:
@@ -108,7 +110,7 @@ class DialogCurves(QtGui.QDialog):
             self.ui.buttonPause.setText('Pause')
 
     def tick(self):
-        now = time.time()
+        now = time.time() - self.refTime
         self.pw.setXRange(now - self.xTimeLength, now)
 
         for ci in self.curveItems:
