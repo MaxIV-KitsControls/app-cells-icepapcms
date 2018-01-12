@@ -16,13 +16,13 @@ class CurveItem:
 
 class DialogCurves(QtGui.QDialog):
 
-    def __init__(self, parent, system_name, address, name):
+    def __init__(self, parent, drv):
         QtGui.QDialog.__init__(self, parent)
         self.ui = Ui_DialogCurves()
-        self.driver = IcepapController().iPaps[system_name]
-        self.icepapAddress = address
+        self.driver = IcepapController().iPaps[drv.icepapsystem_name]
+        self.icepapAddress = drv.addr
         self.ui.setupUi(self)
-        self.setWindowTitle('Curves  |  ' + system_name + '  |  ' + str(self.icepapAddress) + ' ' + name)
+        self.setWindowTitle('Curves  |  ' + drv.icepapsystem_name + '  |  ' + str(self.icepapAddress) + ' ' + drv.name)
         self.show()
         self.refTime = time.time()
         self.ticker = Qt.QTimer(self)

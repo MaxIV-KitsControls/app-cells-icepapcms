@@ -24,6 +24,7 @@ from historiccfgwidget import HistoricCfgWidget
 
 import pyqtgraph as pg
 from dialogcurves import DialogCurves
+from dialogstatusinfo import DialogStatusInfo
 
 
 class PageiPapDriver(QtGui.QWidget):
@@ -168,15 +169,6 @@ class PageiPapDriver(QtGui.QWidget):
 
         self.dbStartupConfig = None
 
-        # Add a pyqtgraph PlotWidget for displaying motor positions.
-        self.pw = pg.PlotWidget()
-        # self.myCurve = self.pw.plot()
-        # self.myCurve.setPen({200, 200, 100})
-        self.time_array = []
-        self.pos_array = []
-        # self.myItem = self.pw.plotItem
-        #self.ui.gridlayout3.addWidget(self.pw)
-
     def signalConnections(self):
         QtCore.QObject.connect(self.ui.btnBlink,QtCore.SIGNAL("pressed()"),self.btnBlink_on_press)
 
@@ -209,6 +201,7 @@ class PageiPapDriver(QtGui.QWidget):
         QtCore.QObject.connect(self.ui.cmdCSWITCH,QtCore.SIGNAL("currentIndexChanged(QString)"),self.changeSwitchesSetup)
 
         QtCore.QObject.connect(self.ui.btnCurves, QtCore.SIGNAL("clicked()"), self.addDialogCurves)
+        QtCore.QObject.connect(self.ui.btnStatus, QtCore.SIGNAL("clicked()"), self.addDialogStatus)
 
     def highlightWidget(self, widget):
         # AGAIN, COMMAND WIDGETS ARE ONLY CHECKED IN THE QCOMBOBOX ELIF SECTION
@@ -1188,17 +1181,11 @@ class PageiPapDriver(QtGui.QWidget):
         self.ui.LCDPositionTest.display(position[0])
         self.ui.LCDEncoder.display(position[1])
 
-        #self.time_array.append(time.time())
-        #self.pos_array.append(position[0])
-        #self.pw.plot(x=self.time_array, y=self.pos_array)
-
-        # self.myItem.addItem(x=0, y=position[0])
-        # self.item = pg.PlotDataItem(pen={"color": "FF0", "width": 1})
-        # self.myItem.addItem(self.item)
-        # self.myItem.setData(x=self.time_array, y=self.pos_array)
-
     def addDialogCurves(self):
-        DialogCurves(self, self.icepap_driver.icepapsystem_name, self.icepap_driver.addr, self.icepap_driver.name)
+        DialogCurves(self, self.icepap_driver)
+
+    def addDialogStatus(self):
+        DialogStatusInfo(self, self.icepap_driver)
 
     def btnGO_on_click(self):
         new_position = self.ui.txtMvAbsolute.text()

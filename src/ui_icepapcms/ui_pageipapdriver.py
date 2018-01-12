@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'pageipapdriver.ui'
 #
-# Created: Tue Jan  9 07:05:23 2018
+# Created: Thu Jan 11 13:57:25 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -896,7 +896,10 @@ class Ui_PageiPapDriver(object):
         self.gridlayout3.addItem(spacerItem8, 3, 0, 1, 1)
         self.btnCurves = QtGui.QPushButton(self.tab_TuneAndTesting)
         self.btnCurves.setObjectName(_fromUtf8("btnCurves"))
-        self.gridlayout3.addWidget(self.btnCurves, 2, 1, 1, 2)
+        self.gridlayout3.addWidget(self.btnCurves, 2, 1, 1, 1)
+        self.btnStatus = QtGui.QPushButton(self.tab_TuneAndTesting)
+        self.btnStatus.setObjectName(_fromUtf8("btnStatus"))
+        self.gridlayout3.addWidget(self.btnStatus, 2, 2, 1, 1)
         self.tabWidget.addTab(self.tab_TuneAndTesting, _fromUtf8(""))
         self.gridlayout.addWidget(self.tabWidget, 1, 0, 1, 1)
 
@@ -967,6 +970,7 @@ class Ui_PageiPapDriver(object):
         self.cmdAUXPS.setText(_translate("PageiPapDriver", "Aux Supply 5V", None))
         self.textLabel3_4.setText(_translate("PageiPapDriver", "Indexer", None))
         self.btnCurves.setText(_translate("PageiPapDriver", "Curves", None))
+        self.btnStatus.setText(_translate("PageiPapDriver", "Status", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_TuneAndTesting), _translate("PageiPapDriver", "Tune and testing", None))
 
 from Led import Led
