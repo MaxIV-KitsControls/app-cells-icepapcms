@@ -22,6 +22,9 @@ import time
 import datetime
 import tempfile
 from historiccfgwidget import HistoricCfgWidget
+from dialogcurves import DialogCurves
+from dialogstatusinfo import DialogStatusInfo
+
 
 class PageiPapDriver(QtGui.QWidget):
     """ Widget that manages all the information related to an icepap driver. Configuration, testing and historic configurations """
@@ -225,8 +228,9 @@ class PageiPapDriver(QtGui.QWidget):
         QtCore.QObject.connect(self.sliderTimer,QtCore.SIGNAL("timeout()"),self.resetSlider)
 
         QtCore.QObject.connect(self.ui.cmdCSWITCH,QtCore.SIGNAL("currentIndexChanged(QString)"),self.changeSwitchesSetup)
-    
-    
+
+        QtCore.QObject.connect(self.ui.btnCurves, QtCore.SIGNAL("clicked()"), self.addDialogCurves)
+        QtCore.QObject.connect(self.ui.btnStatus, QtCore.SIGNAL("clicked()"), self.addDialogStatus)
 
     def highlightWidget(self, widget):
         # AGAIN, COMMAND WIDGETS ARE ONLY CHECKED IN THE QCOMBOBOX ELIF SECTION
@@ -1588,7 +1592,12 @@ class PageiPapDriver(QtGui.QWidget):
         self.ui.LCDPositionTest.display(position[0])
         self.ui.LCDEncoder.display(position[1])
 
-                
+    def addDialogCurves(self):
+        DialogCurves(self, self.icepap_driver)
+
+    def addDialogStatus(self):
+        DialogStatusInfo(self, self.icepap_driver)
+
     def btnGO_on_click(self):
         new_position = self.ui.txtMvAbsolute.text()
         try:
