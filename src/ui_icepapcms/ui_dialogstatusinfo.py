@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogstatusinfo.ui'
 #
-# Created: Thu Jan 11 14:10:22 2018
+# Created: Fri Jan 12 11:46:04 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -39,9 +39,9 @@ class Ui_DialogStatusInfo(object):
         self.btnUpdate = QtGui.QPushButton(self.widget)
         self.btnUpdate.setObjectName(_fromUtf8("btnUpdate"))
         self.horizontalLayout.addWidget(self.btnUpdate)
-        self.btnRegReset = QtGui.QPushButton(self.widget)
-        self.btnRegReset.setObjectName(_fromUtf8("btnRegReset"))
-        self.horizontalLayout.addWidget(self.btnRegReset)
+        self.btnEsync = QtGui.QPushButton(self.widget)
+        self.btnEsync.setObjectName(_fromUtf8("btnEsync"))
+        self.horizontalLayout.addWidget(self.btnEsync)
 
         self.retranslateUi(DialogStatusInfo)
         QtCore.QMetaObject.connectSlotsByName(DialogStatusInfo)
@@ -49,5 +49,5 @@ class Ui_DialogStatusInfo(object):
     def retranslateUi(self, DialogStatusInfo):
         DialogStatusInfo.setWindowTitle(_translate("DialogStatusInfo", "Status Info", None))
         self.btnUpdate.setText(_translate("DialogStatusInfo", "Update", None))
-        self.btnRegReset.setText(_translate("DialogStatusInfo", "Reset Registry", None))
+        self.btnEsync.setText(_translate("DialogStatusInfo", "ESYNC", None))
 

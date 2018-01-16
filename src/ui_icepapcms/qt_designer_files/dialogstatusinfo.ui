@@ -41,9 +41,9 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="btnRegReset">
+     <widget class="QPushButton" name="btnEsync">
       <property name="text">
-       <string>Reset Registry</string>
+       <string>ESYNC</string>
       </property>
      </widget>
     </item>

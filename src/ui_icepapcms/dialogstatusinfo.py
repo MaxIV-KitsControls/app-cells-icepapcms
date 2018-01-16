@@ -14,15 +14,22 @@ class DialogStatusInfo(QtGui.QDialog):
         self.setWindowTitle('Status Info  |  ' + drv.icepapsystem_name + '  |  ' + str(self.icepapAddress) + ' ' + drv.name)
         self.show()
         self.connectSignals()
-        self.getStatusInfo()
+        self.doVstatus()
 
     def connectSignals(self):
-        self.ui.btnUpdate.pressed.connect(self.getStatusInfo)
-        self.ui.btnUpdate.pressed.connect(self.resetReg)
+        self.ui.btnUpdate.pressed.connect(self.doVstatus)
+        self.ui.btnEsync.pressed.connect(self.doEsync)
 
-    def getStatusInfo(self):
-        val = self.driver.getVStatus(self.icepapAddress)
+    def doVstatus(self):
+        val = ""
+        try:
+            val = self.driver.getVStatus(self.icepapAddress)
+        except Exception, e:
+            print(e)
         self.ui.textBrowser.setText(val)
 
-    def resetReg(self):
-        pass
+    def doEsync(self):
+        try:
+            self.driver.syncEncoders(self.icepapAddress)
+        except Exception, e:
+            print(e)
