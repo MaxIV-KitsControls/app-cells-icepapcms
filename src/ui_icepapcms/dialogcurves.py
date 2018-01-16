@@ -64,7 +64,7 @@ class DialogCurves(QtGui.QDialog):
                 val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'Motor'))
             else:
                 val = float(f(self.icepapAddress, source))
-        except:
+        except Exception:
             ok = False
         return ok, val
 
