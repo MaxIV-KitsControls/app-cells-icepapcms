@@ -67,16 +67,8 @@ class DialogCurves(QtGui.QDialog):
                 val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'TgtEnc'))
             elif source == 'Axis - Motor':
                 val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'Motor'))
-            elif source == 'MOVING':
-                val = float(self.driver.getDecodedStatus(self.icepapAddress).get('moving')[0])
-            elif source == 'SETTLING':
-                val = float(self.driver.getDecodedStatus(self.icepapAddress).get('settling')[0])
-            elif source == 'OUTOFWIN':
-                val = float(self.driver.getDecodedStatus(self.icepapAddress).get('outofwin')[0])
-            elif source == 'READY':
-                val = float(self.driver.getDecodedStatus(self.icepapAddress).get('ready')[0])
-            elif source == 'STOPCODE':
-                val = float(self.driver.getDecodedStatus(self.icepapAddress).get('stopcode')[0])
+            elif source in ['MOVING', 'SETTLING', 'OUTOFWIN', 'READY', 'STOPCODE']:
+                val = float(self.driver.getDecodedStatus(self.icepapAddress).get(str(source.toLower()))[0])
             else:
                 val = float(f(self.icepapAddress, source))
         except Exception, e:
