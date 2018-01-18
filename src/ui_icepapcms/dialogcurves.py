@@ -56,7 +56,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.checkBoxOutOfWin.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxOutOfWin))
         self.ui.checkBoxReady.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxReady))
         self.ui.checkBoxStopcode.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxStopcode))
-        self.ui.buttonPause.pressed.connect(self.pauseButtonPressed)
+        self.ui.buttonPause.clicked.connect(self.pauseButtonClicked)
 
     def getVal(self, source):
         f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
@@ -111,7 +111,7 @@ class DialogCurves(QtGui.QDialog):
                     self.vb.removeItem(ci.curve)
                     self.curveItems.remove(ci)
 
-    def pauseButtonPressed(self):
+    def pauseButtonClicked(self):
         if self.ticker.isActive():
             self.ticker.stop()
             self.ui.buttonPause.setText('Run')

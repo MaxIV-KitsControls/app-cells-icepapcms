@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Wed Jan 17 10:06:11 2018
+# Created: Wed Jan 17 16:56:08 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_DialogCurves(object):
     def setupUi(self, DialogCurves):
         DialogCurves.setObjectName(_fromUtf8("DialogCurves"))
-        DialogCurves.resize(641, 764)
+        DialogCurves.resize(641, 666)
         DialogCurves.setMinimumSize(QtCore.QSize(50, 0))
         self.gridLayoutWidget = QtGui.QWidget(DialogCurves)
         self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 491, 651))

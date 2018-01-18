@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>988</width>
     <height>613</height>
    </rect>
   </property>
@@ -32,121 +32,6 @@
    <property name="spacing">
     <number>6</number>
    </property>
-   <item row="0" column="0">
-    <widget class="QFrame" name="frame_description">
-     <property name="minimumSize">
-      <size>
-       <width>16</width>
-       <height>50</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>85</height>
-      </size>
-     </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
-     </property>
-     <layout class="QHBoxLayout">
-      <item>
-       <layout class="QHBoxLayout">
-        <item>
-         <widget class="QLabel" name="label_2">
-          <property name="maximumSize">
-           <size>
-            <width>31</width>
-            <height>26</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Axis:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="dscDriverName">
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>26</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>&lt;DRIVER_NAME&gt;</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QHBoxLayout">
-        <item>
-         <widget class="QLabel" name="label_4">
-          <property name="maximumSize">
-           <size>
-            <width>41</width>
-            <height>26</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Active:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="dscActive">
-          <property name="text">
-           <string>&lt;YES/NO&gt;</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QPushButton" name="btnBlink">
-        <property name="text">
-         <string>blink driver</string>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout">
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="maximumSize">
-           <size>
-            <width>63</width>
-            <height>26</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Last config:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="dscSignature">
-          <property name="text">
-           <string>&lt;_DATE_&gt;</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </widget>
-   </item>
    <item row="0" column="1" rowspan="2">
     <widget class="QFrame" name="frame_right">
      <property name="minimumSize">
@@ -1591,7 +1476,118 @@ p, li { white-space: pre-wrap; }
        <property name="spacing">
         <number>6</number>
        </property>
-       <item row="1" column="0">
+       <item row="3" column="1" rowspan="3">
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>HOME/SRCH</string>
+         </property>
+         <widget class="QComboBox" name="cbHomeSrch1">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>20</y>
+            <width>151</width>
+            <height>31</height>
+           </rect>
+          </property>
+          <item>
+           <property name="text">
+            <string>HOME</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>SRCH</string>
+           </property>
+          </item>
+         </widget>
+         <widget class="QComboBox" name="cbHomeSrch2">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>60</y>
+            <width>151</width>
+            <height>30</height>
+           </rect>
+          </property>
+          <item>
+           <property name="text">
+            <string>+1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>0</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>-1</string>
+           </property>
+          </item>
+         </widget>
+         <widget class="QComboBox" name="cbHomeSrch3">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>100</y>
+            <width>151</width>
+            <height>30</height>
+           </rect>
+          </property>
+          <item>
+           <property name="text">
+            <string>POSEDGE</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>NEGEDGE</string>
+           </property>
+          </item>
+         </widget>
+         <widget class="QPushButton" name="btnHomeSrchGo">
+          <property name="geometry">
+           <rect>
+            <x>170</x>
+            <y>20</y>
+            <width>41</width>
+            <height>151</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Go</string>
+          </property>
+         </widget>
+         <widget class="QComboBox" name="cbHomeSrch4">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>140</y>
+            <width>151</width>
+            <height>30</height>
+           </rect>
+          </property>
+          <item>
+           <property name="text">
+            <string>+1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>-1</string>
+           </property>
+          </item>
+         </widget>
+        </widget>
+       </item>
+       <item row="2" column="1">
         <widget class="QGroupBox" name="groupBox_13">
          <property name="font">
           <font>
@@ -1604,6 +1600,58 @@ p, li { white-space: pre-wrap; }
           <string>Info Signals</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_54">
+            <property name="text">
+             <string>InfoA</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QComboBox" name="cmdINFOCPOL"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_53">
+            <property name="text">
+             <string>InfoB</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_56">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Polarity</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="cmdINFOASRC"/>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_52">
+            <property name="text">
+             <string>InfoC</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QComboBox" name="cmdINFOBPOL"/>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="cmdINFOBSRC"/>
+          </item>
+          <item row="1" column="2">
+           <widget class="QComboBox" name="cmdINFOAPOL"/>
+          </item>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="cmdINFOCSRC"/>
+          </item>
           <item row="0" column="1">
            <widget class="QLabel" name="label_55">
             <property name="font">
@@ -1622,101 +1670,17 @@ p, li { white-space: pre-wrap; }
             </property>
            </widget>
           </item>
-          <item row="0" column="2">
-           <widget class="QLabel" name="label_56">
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>Polarity</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_54">
-            <property name="text">
-             <string>InfoA</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QComboBox" name="cmdINFOASRC"/>
-          </item>
-          <item row="1" column="2">
-           <widget class="QComboBox" name="cmdINFOAPOL"/>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_53">
-            <property name="text">
-             <string>InfoB</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <spacer name="verticalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>109</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="cmdINFOBSRC"/>
-          </item>
-          <item row="2" column="2">
-           <widget class="QComboBox" name="cmdINFOBPOL"/>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_52">
-            <property name="text">
-             <string>InfoC</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QComboBox" name="cmdINFOCSRC"/>
-          </item>
-          <item row="3" column="2">
-           <widget class="QComboBox" name="cmdINFOCPOL"/>
-          </item>
-          <item row="4" column="0">
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>109</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="4" column="2">
-           <spacer name="verticalSpacer_3">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>109</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
          </layout>
         </widget>
        </item>
-       <item row="0" column="1" rowspan="2" colspan="2">
+       <item row="0" column="1">
+        <widget class="QCheckBox" name="cmdAUXPS">
+         <property name="text">
+          <string>Aux Supply 5V</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2" rowspan="6" colspan="2">
         <layout class="QVBoxLayout">
          <property name="spacing">
           <number>6</number>
@@ -2258,59 +2222,31 @@ p, li { white-space: pre-wrap; }
          </item>
         </layout>
        </item>
-       <item row="0" column="0">
-        <layout class="QGridLayout">
-         <property name="margin">
-          <number>0</number>
+       <item row="1" column="1">
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="title">
+          <string>Indexer</string>
          </property>
-         <property name="spacing">
-          <number>6</number>
-         </property>
-         <item row="1" column="0" colspan="3">
-          <widget class="QCheckBox" name="cmdAUXPS">
-           <property name="text">
-            <string>Aux Supply 5V</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1" colspan="2">
-          <widget class="QComboBox" name="cmdINDEXER"/>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="textLabel3_4">
-           <property name="font">
-            <font>
-             <pointsize>8</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Indexer</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+         <widget class="QComboBox" name="cmdINDEXER">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>20</y>
+            <width>192</width>
+            <height>25</height>
+           </rect>
+          </property>
+         </widget>
+        </widget>
        </item>
-       <item row="3" column="0">
-        <spacer name="verticalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="2" column="1">
+       <item row="6" column="2">
         <widget class="QPushButton" name="btnCurves">
          <property name="text">
           <string>Curves</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="2">
+       <item row="6" column="3">
         <widget class="QPushButton" name="btnStatus">
          <property name="text">
           <string>Status</string>
@@ -2320,6 +2256,134 @@ p, li { white-space: pre-wrap; }
       </layout>
      </widget>
     </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QFrame" name="frame_description">
+     <property name="minimumSize">
+      <size>
+       <width>16</width>
+       <height>50</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>85</height>
+      </size>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QHBoxLayout">
+      <item>
+       <layout class="QHBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="maximumSize">
+           <size>
+            <width>31</width>
+            <height>26</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Axis:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="dscDriverName">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>26</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>&lt;DRIVER_NAME&gt;</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="maximumSize">
+           <size>
+            <width>41</width>
+            <height>26</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Active:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="dscActive">
+          <property name="text">
+           <string>&lt;YES/NO&gt;</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnBlink">
+        <property name="text">
+         <string>blink driver</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="maximumSize">
+           <size>
+            <width>63</width>
+            <height>26</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Last config:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="dscSignature">
+          <property name="text">
+           <string>&lt;_DATE_&gt;</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>
