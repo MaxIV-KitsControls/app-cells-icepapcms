@@ -19,7 +19,7 @@
      <x>10</x>
      <y>10</y>
      <width>411</width>
-     <height>491</height>
+     <height>451</height>
     </rect>
    </property>
   </widget>
@@ -29,14 +29,14 @@
      <x>10</x>
      <y>510</y>
      <width>411</width>
-     <height>30</height>
+     <height>34</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
      <widget class="QPushButton" name="btnUpdate">
       <property name="text">
-       <string>Update</string>
+       <string>VSTATUS</string>
       </property>
      </widget>
     </item>
@@ -47,14 +47,11 @@
       </property>
      </widget>
     </item>
+    <item>
+     <widget class="QLineEdit" name="txt1Command"/>
+    </item>
    </layout>
   </widget>
-  <zorder>textBrowser</zorder>
-  <zorder>layoutWidget</zorder>
-  <zorder>btnUpdate</zorder>
-  <zorder>btnEsync</zorder>
-  <zorder>btnUpdate</zorder>
-  <zorder>btnEsync</zorder>
  </widget>
  <resources/>
  <connections/>

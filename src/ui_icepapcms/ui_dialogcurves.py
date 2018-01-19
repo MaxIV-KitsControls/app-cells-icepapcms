@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Wed Jan 17 16:56:08 2018
+# Created: Fri Jan 19 16:32:08 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!

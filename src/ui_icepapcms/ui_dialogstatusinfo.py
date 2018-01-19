@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogstatusinfo.ui'
 #
-# Created: Thu Jan 18 12:00:06 2018
+# Created: Fri Jan 19 16:32:08 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -28,10 +28,10 @@ class Ui_DialogStatusInfo(object):
         DialogStatusInfo.setObjectName(_fromUtf8("DialogStatusInfo"))
         DialogStatusInfo.resize(428, 550)
         self.textBrowser = QtGui.QTextBrowser(DialogStatusInfo)
-        self.textBrowser.setGeometry(QtCore.QRect(10, 10, 411, 491))
+        self.textBrowser.setGeometry(QtCore.QRect(10, 10, 411, 451))
         self.textBrowser.setObjectName(_fromUtf8("textBrowser"))
         self.layoutWidget = QtGui.QWidget(DialogStatusInfo)
-        self.layoutWidget.setGeometry(QtCore.QRect(10, 510, 411, 30))
+        self.layoutWidget.setGeometry(QtCore.QRect(10, 510, 411, 34))
         self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
         self.horizontalLayout = QtGui.QHBoxLayout(self.layoutWidget)
         self.horizontalLayout.setMargin(0)
@@ -42,12 +42,15 @@ class Ui_DialogStatusInfo(object):
         self.btnEsync = QtGui.QPushButton(self.layoutWidget)
         self.btnEsync.setObjectName(_fromUtf8("btnEsync"))
         self.horizontalLayout.addWidget(self.btnEsync)
+        self.txt1Command = QtGui.QLineEdit(self.layoutWidget)
+        self.txt1Command.setObjectName(_fromUtf8("txt1Command"))
+        self.horizontalLayout.addWidget(self.txt1Command)
 
         self.retranslateUi(DialogStatusInfo)
         QtCore.QMetaObject.connectSlotsByName(DialogStatusInfo)
 
     def retranslateUi(self, DialogStatusInfo):
         DialogStatusInfo.setWindowTitle(_translate("DialogStatusInfo", "Status Info", None))
-        self.btnUpdate.setText(_translate("DialogStatusInfo", "Update", None))
+        self.btnUpdate.setText(_translate("DialogStatusInfo", "VSTATUS", None))
         self.btnEsync.setText(_translate("DialogStatusInfo", "ESYNC", None))
 
