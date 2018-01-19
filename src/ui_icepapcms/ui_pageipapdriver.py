@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'pageipapdriver.ui'
 #
-# Created: Thu Jan 18 09:34:23 2018
+# Created: Fri Jan 19 10:30:31 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -949,7 +949,7 @@ class Ui_PageiPapDriver(object):
         self.btnSaveCfg.setText(_translate("PageiPapDriver", "Validate Config", None))
         self.btnUndo.setText(_translate("PageiPapDriver", "Discard changes", None))
         self.btnRestore.setText(_translate("PageiPapDriver", "Reload board config", None))
-        self.groupBox_21.setTitle(_translate("PageiPapDriver", "HOME/SRCH", None))
+        self.groupBox_21.setTitle(_translate("PageiPapDriver", "HOME/SRCH1", None))
         self.cbHomeSrch1.setItemText(0, _translate("PageiPapDriver", "HOME", None))
         self.cbHomeSrch1.setItemText(1, _translate("PageiPapDriver", "SRCH", None))
         self.cbHomeSrch2.setItemText(0, _translate("PageiPapDriver", "+1", None))
