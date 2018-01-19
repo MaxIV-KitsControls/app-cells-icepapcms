@@ -17,8 +17,8 @@ class DialogStatusInfo(QtGui.QDialog):
         self.doVstatus()
 
     def connectSignals(self):
-        self.ui.btnUpdate.pressed.connect(self.doVstatus)
-        self.ui.btnEsync.pressed.connect(self.doEsync)
+        self.ui.btnUpdate.clicked.connect(self.doVstatus)
+        self.ui.btnEsync.clicked.connect(self.doEsync)
 
     def doVstatus(self):
         val = ""

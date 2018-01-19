@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>428</width>
-    <height>278</height>
+    <height>550</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,15 +19,15 @@
      <x>10</x>
      <y>10</y>
      <width>411</width>
-     <height>221</height>
+     <height>491</height>
     </rect>
    </property>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>240</y>
+     <y>510</y>
      <width>411</width>
      <height>30</height>
     </rect>
@@ -49,6 +49,12 @@
     </item>
    </layout>
   </widget>
+  <zorder>textBrowser</zorder>
+  <zorder>layoutWidget</zorder>
+  <zorder>btnUpdate</zorder>
+  <zorder>btnEsync</zorder>
+  <zorder>btnUpdate</zorder>
+  <zorder>btnEsync</zorder>
  </widget>
  <resources/>
  <connections/>

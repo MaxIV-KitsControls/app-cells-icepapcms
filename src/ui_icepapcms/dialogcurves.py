@@ -40,32 +40,40 @@ class DialogCurves(QtGui.QDialog):
     def connectSignals(self):
         QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
         self.ui.radioButtonAxis.toggled.connect(self.radioButtonsToggled)
-        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis, 'Axis'))
-        self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc, 'ShftEnc'))
-        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc, 'TgtEnc'))
-        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn, 'EncIn'))
-        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos, 'InPos'))
-        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc, 'AbsEnc'))
-        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure, 'Measure'))
-        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc, 'CtrlEnc'))
-        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor, 'Motor'))
-        self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1, 'Delta1'))
-        self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2, 'Delta2'))
-        self.ui.buttonPause.pressed.connect(self.pauseButtonPressed)
+        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis))
+        self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc))
+        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc))
+        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn))
+        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos))
+        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc))
+        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure))
+        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc))
+        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor))
+        self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1))
+        self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2))
+        self.ui.checkBoxMoving.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMoving))
+        self.ui.checkBoxSettling.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxSettling))
+        self.ui.checkBoxOutOfWin.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxOutOfWin))
+        self.ui.checkBoxReady.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxReady))
+        self.ui.checkBoxStopcode.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxStopcode))
+        self.ui.buttonPause.clicked.connect(self.pauseButtonClicked)
 
     def getVal(self, source):
         f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
         ok = True
         val = 0.0
         try:
-            if source == 'Delta1':
+            if source == 'Axis - TgtEnc':
                 val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'TgtEnc'))
-            elif source == 'Delta2':
+            elif source == 'Axis - Motor':
                 val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'Motor'))
+            elif source in ['MOVING', 'SETTLING', 'OUTOFWIN', 'READY', 'STOPCODE']:
+                val = float(self.driver.getDecodedStatus(self.icepapAddress).get(str(source.toLower()))[0])
             else:
                 val = float(f(self.icepapAddress, source))
-        except Exception:
+        except Exception, e:
             ok = False
+            print(e)
         return ok, val
 
     def radioButtonsToggled(self):
@@ -74,13 +82,14 @@ class DialogCurves(QtGui.QDialog):
             curveItem.arrayTime = []
             curveItem.arrayVal = []
 
-    def selectedCurve(self, cb, source):
+    def selectedCurve(self, cb):
         checked = cb.checkState()
+        source = cb.text()
         if checked == 2:
             (ok, val) = self.getVal(source)
             if ok:
                 col = cb.palette().color(cb.palette().Active, cb.palette().WindowText)
-                w = 2 if source == 'Delta1' or source == 'Delta2' else 1
+                w = 2 if source in ['Axis - TgtEnc', 'Axis - Motor'] else 1
                 ci = CurveItem(self.pw, source, col, w)
                 self.curveItems.append(ci)
                 ci.arrayTime = [time.time() - self.refTime]
@@ -94,7 +103,7 @@ class DialogCurves(QtGui.QDialog):
                     self.vb.removeItem(ci.curve)
                     self.curveItems.remove(ci)
 
-    def pauseButtonPressed(self):
+    def pauseButtonClicked(self):
         if self.ticker.isActive():
             self.ticker.stop()
             self.ui.buttonPause.setText('Run')

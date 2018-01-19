@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogstatusinfo.ui'
 #
-# Created: Fri Jan 12 11:46:04 2018
+# Created: Thu Jan 18 12:00:06 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,20 +26,20 @@ except AttributeError:
 class Ui_DialogStatusInfo(object):
     def setupUi(self, DialogStatusInfo):
         DialogStatusInfo.setObjectName(_fromUtf8("DialogStatusInfo"))
-        DialogStatusInfo.resize(428, 278)
+        DialogStatusInfo.resize(428, 550)
         self.textBrowser = QtGui.QTextBrowser(DialogStatusInfo)
-        self.textBrowser.setGeometry(QtCore.QRect(10, 10, 411, 221))
+        self.textBrowser.setGeometry(QtCore.QRect(10, 10, 411, 491))
         self.textBrowser.setObjectName(_fromUtf8("textBrowser"))
-        self.widget = QtGui.QWidget(DialogStatusInfo)
-        self.widget.setGeometry(QtCore.QRect(10, 240, 411, 30))
-        self.widget.setObjectName(_fromUtf8("widget"))
-        self.horizontalLayout = QtGui.QHBoxLayout(self.widget)
+        self.layoutWidget = QtGui.QWidget(DialogStatusInfo)
+        self.layoutWidget.setGeometry(QtCore.QRect(10, 510, 411, 30))
+        self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
+        self.horizontalLayout = QtGui.QHBoxLayout(self.layoutWidget)
         self.horizontalLayout.setMargin(0)
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
-        self.btnUpdate = QtGui.QPushButton(self.widget)
+        self.btnUpdate = QtGui.QPushButton(self.layoutWidget)
         self.btnUpdate.setObjectName(_fromUtf8("btnUpdate"))
         self.horizontalLayout.addWidget(self.btnUpdate)
-        self.btnEsync = QtGui.QPushButton(self.widget)
+        self.btnEsync = QtGui.QPushButton(self.layoutWidget)
         self.btnEsync.setObjectName(_fromUtf8("btnEsync"))
         self.horizontalLayout.addWidget(self.btnEsync)
 
