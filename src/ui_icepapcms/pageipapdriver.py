@@ -1653,9 +1653,15 @@ class PageiPapDriver(QtGui.QWidget):
             command = str(a) + ':?HOMESTAT'
             txt = IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
             command = str(a) + ':?HOMEPOS AXIS'
-            txt = txt + "\n" + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            txt = txt + "\nPAxis " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            command = str(a) + ':?HOMEPOS TGTENC'
+            txt = txt + "\nPTgt " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            command = str(a) + ':?HOMEPOS SHFTENC'
+            txt = txt + "\nPShft " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
             command = str(a) + ':?HOMEENC TGTENC'
-            txt = txt + "\n" + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            txt = txt + "\nETgt " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            command = str(a) + ':?HOMEENC SHFTENC'
+            txt = txt + "\nEShft " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
             self.ui.homeBrowser.setText(txt)
         else:
             command = str(a) + ':?SRCHSTAT'

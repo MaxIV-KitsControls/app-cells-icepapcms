@@ -20,10 +20,15 @@ class DialogStatusInfo(QtGui.QDialog):
     def connectSignals(self):
         self.ui.btnUpdate.clicked.connect(self.doVstatus)
         self.ui.btnEsync.clicked.connect(self.doEsync)
+        self.ui.btnUpdate.setDefault(False)
+        self.ui.btnEsync.setDefault(False)
+        self.ui.btnUpdate.setAutoDefault(False)
+        self.ui.btnEsync.setAutoDefault(False)
         self.ui.txt1Command.returnPressed.connect(self.sendCommand)
+        #self.ui.txt1Command.returnPressed.connect(lambda: self.sendCommand())
         #self.ui.txt1Command.returnPressed()
         QtCore.QObject.connect(self.ui.txt1Command,QtCore.SIGNAL("editingFinished()"),self.sendCommand)
-        QtCore.QObject.connect(self.ui.txt1Command,QtCore.SIGNAL("returnPressed()"),self.sendCommand)
+        #QtCore.QObject.connect(self.ui.txt1Command,QtCore.SIGNAL("returnPressed()"),self.sendCommand)
         #self.ui.btnCommand.clicked.connect(self.sendCommand)
 
 

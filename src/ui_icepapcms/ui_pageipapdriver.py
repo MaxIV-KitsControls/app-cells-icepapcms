@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'pageipapdriver.ui'
 #
-# Created: Fri Jan 19 16:32:06 2018
+# Created: Mon Jan 22 09:02:21 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -613,7 +613,7 @@ class Ui_PageiPapDriver(object):
         self.cbHomeSrch4.addItem(_fromUtf8(""))
         self.cbHomeSrch4.addItem(_fromUtf8(""))
         self.homeBrowser = QtGui.QTextBrowser(self.groupBox_21)
-        self.homeBrowser.setGeometry(QtCore.QRect(60, 50, 151, 61))
+        self.homeBrowser.setGeometry(QtCore.QRect(60, 50, 151, 111))
         self.homeBrowser.setObjectName(_fromUtf8("homeBrowser"))
         self.btnHomeStat = QtGui.QPushButton(self.groupBox_21)
         self.btnHomeStat.setGeometry(QtCore.QRect(10, 80, 41, 28))
