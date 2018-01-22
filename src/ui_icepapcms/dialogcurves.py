@@ -7,12 +7,17 @@ import time
 
 class CurveItem:
 
-    def __init__(self, widget, source, col, width):
+    def __init__(self, widget, source, col, width, measure='', driver=0, plotAxis=0):
         self.source = source
         self.arrayTime = []
         self.arrayVal = []
+        self.measure = measure
+        self.driver = driver
+        self.plotAxis = plotAxis
         self.curve = widget.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
 
+    def getText(self):
+        return '%s:%s:%s'%(self.driver, self.measure, self.plotAxis)
 
 class DialogCurves(QtGui.QDialog):
 
@@ -45,6 +50,26 @@ class DialogCurves(QtGui.QDialog):
         self.pw.addItem(self.hLine, ignoreBounds=True)
         self.pw.addItem(self.label)
 
+        self.magnitudes = ['PosAxis', 'PosTgtenc', 'PosShftenc',
+                      'PosEncin', 'PosAbsenc', 'PosInpos',
+                      'PosMotor', 'PosMeas', 'PosCtrlenc',
+                      'DifTgtMot', 'DifAxMot', 'DifShftMot',
+                      'DifAxCtrl',
+                      'EncEncin', 'EncAbsenc', 'EncInpos',
+                      'StatReady', 'StatMoving', 'StatSettling',
+                      'StatOutofwin', 'StatStopcode',
+                      'MeasI', 'MeasIa', 'MeasIb'
+                      ]
+
+        self.maxDrivers = 128
+        self.maxPlotAxes = 4
+        for i in range(1, self.maxDrivers +1):
+            self.ui.cbDriver.addItem(str(i))
+        for item in self.magnitudes:
+            self.ui.cbMagnitude.addItem(item)
+        for i in range(1, self.maxPlotAxes +1):
+            self.ui.cbPlotAxis.addItem(str(i))
+
     def connectSignals(self):
         QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
         self.ui.radioButtonAxis.toggled.connect(self.radioButtonsToggled)
@@ -64,10 +89,38 @@ class DialogCurves(QtGui.QDialog):
         self.ui.checkBoxOutOfWin.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxOutOfWin))
         self.ui.checkBoxReady.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxReady))
         self.ui.checkBoxStopcode.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxStopcode))
-        self.ui.buttonPause.clicked.connect(self.pauseButtonClicked)
+        self.ui.btnAdd.clicked.connect(self.addButtonClicked)
+        self.ui.btnShift.clicked.connect(self.shiftButtonClicked)
+        self.ui.btnRemove.clicked.connect(self.removeButtonClicked)
 
         self.proxy = pg.SignalProxy(self.pw.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
 
+
+    def addButtonClicked(self):
+        cb = self.ui.cbMagnitude
+        color = cb.palette().color(cb.palette().Active, cb.palette().WindowText)
+        ci = CurveItem(self.pw,
+                       source='',
+                       col=color,
+                       width=1,
+                       measure=self.magnitudes[self.ui.cbMagnitude.currentIndex()],
+                       driver=self.ui.cbDriver.currentIndex() + 1,
+                       plotAxis=self.ui.cbPlotAxis.currentIndex() + 1
+                       )
+        self.curveItems.append(ci)
+        ci.arrayTime = [time.time() - self.refTime]
+        ci.arrayVal = [1]
+        ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
+        self.ui.cbCurves.addItem(ci.getText())
+
+    def shiftButtonClicked(self):
+        ci = self.curveItems[self.ui.cbCurves.currentIndex()]
+        ci.plotAxis = ci.plotAxis%self.maxPlotAxes + 1
+        self.ui.cbCurves.setItemText(self.ui.cbCurves.currentIndex(), ci.getText())
+
+    def removeButtonClicked(self):
+        self.curveItems.remove(self.curveItems[self.ui.cbCurves.currentIndex()])
+        self.ui.cbCurves.removeItem(self.ui.cbCurves.currentIndex())
 
     def mouseMoved(self, evt):
         pos = evt[0]  ## using signal proxy turns original arguments into a tuple

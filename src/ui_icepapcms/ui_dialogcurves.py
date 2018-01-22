@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Mon Jan 22 09:02:22 2018
+# Created: Mon Jan 22 17:46:46 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -29,14 +29,14 @@ class Ui_DialogCurves(object):
         DialogCurves.resize(641, 666)
         DialogCurves.setMinimumSize(QtCore.QSize(50, 0))
         self.gridLayoutWidget = QtGui.QWidget(DialogCurves)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 491, 651))
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 381, 651))
         self.gridLayoutWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
         self.gridLayout = QtGui.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setSizeConstraint(QtGui.QLayout.SetDefaultConstraint)
         self.gridLayout.setMargin(0)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.groupBoxResolution = QtGui.QGroupBox(DialogCurves)
-        self.groupBoxResolution.setGeometry(QtCore.QRect(509, 10, 121, 71))
+        self.groupBoxResolution.setGeometry(QtCore.QRect(510, 10, 121, 71))
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -460,6 +460,35 @@ class Ui_DialogCurves(object):
         self.buttonPause = QtGui.QPushButton(DialogCurves)
         self.buttonPause.setGeometry(QtCore.QRect(510, 630, 121, 28))
         self.buttonPause.setObjectName(_fromUtf8("buttonPause"))
+        self.verticalLayoutWidget = QtGui.QWidget(DialogCurves)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(400, 0, 101, 411))
+        self.verticalLayoutWidget.setObjectName(_fromUtf8("verticalLayoutWidget"))
+        self.verticalLayout_2 = QtGui.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout_2.setMargin(0)
+        self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
+        self.cbDriver = QtGui.QComboBox(self.verticalLayoutWidget)
+        self.cbDriver.setObjectName(_fromUtf8("cbDriver"))
+        self.verticalLayout_2.addWidget(self.cbDriver)
+        self.cbMagnitude = QtGui.QComboBox(self.verticalLayoutWidget)
+        self.cbMagnitude.setObjectName(_fromUtf8("cbMagnitude"))
+        self.verticalLayout_2.addWidget(self.cbMagnitude)
+        self.cbPlotAxis = QtGui.QComboBox(self.verticalLayoutWidget)
+        self.cbPlotAxis.setObjectName(_fromUtf8("cbPlotAxis"))
+        self.verticalLayout_2.addWidget(self.cbPlotAxis)
+        self.btnAdd = QtGui.QPushButton(self.verticalLayoutWidget)
+        self.btnAdd.setObjectName(_fromUtf8("btnAdd"))
+        self.verticalLayout_2.addWidget(self.btnAdd)
+        self.cbCurves = QtGui.QComboBox(self.verticalLayoutWidget)
+        self.cbCurves.setObjectName(_fromUtf8("cbCurves"))
+        self.verticalLayout_2.addWidget(self.cbCurves)
+        self.btnShift = QtGui.QPushButton(self.verticalLayoutWidget)
+        self.btnShift.setObjectName(_fromUtf8("btnShift"))
+        self.verticalLayout_2.addWidget(self.btnShift)
+        self.btnRemove = QtGui.QPushButton(self.verticalLayoutWidget)
+        self.btnRemove.setObjectName(_fromUtf8("btnRemove"))
+        self.verticalLayout_2.addWidget(self.btnRemove)
+        spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_2.addItem(spacerItem)
 
         self.retranslateUi(DialogCurves)
         QtCore.QMetaObject.connectSlotsByName(DialogCurves)
@@ -487,4 +516,7 @@ class Ui_DialogCurves(object):
         self.checkBoxReady.setText(_translate("DialogCurves", "READY", None))
         self.checkBoxStopcode.setText(_translate("DialogCurves", "STOPCODE", None))
         self.buttonPause.setText(_translate("DialogCurves", "Pause", None))
+        self.btnAdd.setText(_translate("DialogCurves", "Add", None))
+        self.btnShift.setText(_translate("DialogCurves", "Shift", None))
+        self.btnRemove.setText(_translate("DialogCurves", "Remove", None))
 
