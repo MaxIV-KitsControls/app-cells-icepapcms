@@ -36,6 +36,14 @@ class DialogCurves(QtGui.QDialog):
         self.ui.gridLayout.addWidget(self.pw)
         self.connectSignals()
         self.ticker.start(self.tickInterval)
+        self.last_now = None
+
+        self.label = pg.LabelItem(justify='right')
+        self.vLine = pg.InfiniteLine(angle=90, movable=False)
+        self.hLine = pg.InfiniteLine(angle=0, movable=False)
+        self.pw.addItem(self.vLine, ignoreBounds=True)
+        self.pw.addItem(self.hLine, ignoreBounds=True)
+        self.pw.addItem(self.label)
 
     def connectSignals(self):
         QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
@@ -57,6 +65,37 @@ class DialogCurves(QtGui.QDialog):
         self.ui.checkBoxReady.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxReady))
         self.ui.checkBoxStopcode.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxStopcode))
         self.ui.buttonPause.clicked.connect(self.pauseButtonClicked)
+
+        self.proxy = pg.SignalProxy(self.pw.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
+
+
+    def mouseMoved(self, evt):
+        pos = evt[0]  ## using signal proxy turns original arguments into a tuple
+        if self.pw.sceneBoundingRect().contains(pos):
+            mousePoint = self.vb.mapSceneToView(pos)
+            index = mousePoint.x()
+            viewRange = self.pw.viewRange()
+            xMaxViewed = viewRange[0][1]
+            xMinViewed = viewRange[0][0]
+            print "index, xmaxv, xminv ", index, xMaxViewed, xMinViewed
+            txt = '' + "%0.2f"%(index)
+            for i in range(0, len(self.curveItems)):
+                if index > self.curveItems[i].arrayTime[0] and index < self.curveItems[i].arrayTime[-1]:
+                    aTimeIndex = self.findIndexInTimes(self.curveItems[i].arrayTime, index)
+                    txt = txt + ' ' + str(i)
+                    txt = txt + ' ' + "%0.2f"%(self.curveItems[i].arrayTime[aTimeIndex])
+                    txt = txt + ' ' + str(self.curveItems[i].arrayVal[aTimeIndex])
+            self.pw.setTitle(
+                   "<span style='font-size: 10pt; color: red;'>%s</span>" % (
+                    txt))
+            self.vLine.setPos(mousePoint.x())
+            self.hLine.setPos(mousePoint.y())
+
+    def findIndexInTimes(self, aList, value):
+        for i in range(0, len(aList)):
+            if aList[i] > value:
+                return i
+        return -1
 
     def getVal(self, source):
         f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
@@ -113,18 +152,21 @@ class DialogCurves(QtGui.QDialog):
 
     def tick(self):
         now = time.time() - self.refTime
-        self.pw.setXRange(now - self.xTimeLength, now)
+        #print "range:", self.pw.viewRange()
+        if self.pw.viewRange()[0][1] >= self.last_now:
+            self.pw.setXRange(now - self.xTimeLength, now)
+        self.last_now = now
 
         for ci in self.curveItems:
             (ok, val) = self.getVal(ci.source)
             if ok:
                 ci.arrayTime.append(now)
                 ci.arrayVal.append(val)
-                count = self.xTimeLength * 1000 / self.tickInterval
-                if len(ci.arrayTime) > 1000 * count:
-                    ci.arrayTime = ci.arrayTime[-(100 * count):]
-                    ci.arrayVal = ci.arrayVal[-(100 * count):]
-                ci.curve.setData(x=ci.arrayTime[-(100 * count):], y=ci.arrayVal[-(100 * count):])
+                displayedDataPoints = self.xTimeLength * 1000 / self.tickInterval
+                if len(ci.arrayTime) > 1000 * displayedDataPoints: #this should be 100*
+                    ci.arrayTime = ci.arrayTime[-(100 * displayedDataPoints):]
+                    ci.arrayVal = ci.arrayVal[-(100 * displayedDataPoints):]
+                ci.curve.setData(x=ci.arrayTime[-(100 * displayedDataPoints):], y=ci.arrayVal[-(100 * displayedDataPoints):])
             else:
                 print('Failed to update curve for ' + ci.source + '!')
 
