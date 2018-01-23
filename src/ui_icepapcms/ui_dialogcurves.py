@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Tue Jan 23 12:03:49 2018
+# Created: Tue Jan 23 13:45:20 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -29,7 +29,7 @@ class Ui_DialogCurves(object):
         DialogCurves.resize(641, 666)
         DialogCurves.setMinimumSize(QtCore.QSize(50, 0))
         self.gridLayoutWidget = QtGui.QWidget(DialogCurves)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 511, 651))
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 491, 651))
         self.gridLayoutWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
         self.gridLayout = QtGui.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setSizeConstraint(QtGui.QLayout.SetDefaultConstraint)
@@ -39,7 +39,7 @@ class Ui_DialogCurves(object):
         self.btnPause.setGeometry(QtCore.QRect(510, 630, 121, 28))
         self.btnPause.setObjectName(_fromUtf8("btnPause"))
         self.verticalLayoutWidget = QtGui.QWidget(DialogCurves)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(530, 0, 101, 411))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(510, 0, 121, 411))
         self.verticalLayoutWidget.setObjectName(_fromUtf8("verticalLayoutWidget"))
         self.verticalLayout_2 = QtGui.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout_2.setMargin(0)
@@ -65,6 +65,9 @@ class Ui_DialogCurves(object):
         self.listCurves = QtGui.QListWidget(self.verticalLayoutWidget)
         self.listCurves.setObjectName(_fromUtf8("listCurves"))
         self.verticalLayout_2.addWidget(self.listCurves)
+        self.btnCLoop = QtGui.QPushButton(self.verticalLayoutWidget)
+        self.btnCLoop.setObjectName(_fromUtf8("btnCLoop"))
+        self.verticalLayout_2.addWidget(self.btnCLoop)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem)
 
@@ -77,4 +80,5 @@ class Ui_DialogCurves(object):
         self.btnAdd.setText(_translate("DialogCurves", "Add", None))
         self.btnShift.setText(_translate("DialogCurves", "Shift", None))
         self.btnRemove.setText(_translate("DialogCurves", "Remove", None))
+        self.btnCLoop.setText(_translate("DialogCurves", "CLoop", None))
 

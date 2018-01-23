@@ -24,7 +24,7 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>511</width>
+     <width>491</width>
      <height>651</height>
     </rect>
    </property>
@@ -50,9 +50,9 @@
   <widget class="QWidget" name="verticalLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>530</x>
+     <x>510</x>
      <y>0</y>
-     <width>101</width>
+     <width>121</width>
      <height>411</height>
     </rect>
    </property>
@@ -89,6 +89,13 @@
     </item>
     <item>
      <widget class="QListWidget" name="listCurves"/>
+    </item>
+    <item>
+     <widget class="QPushButton" name="btnCLoop">
+      <property name="text">
+       <string>CLoop</string>
+      </property>
+     </widget>
     </item>
     <item>
      <spacer name="verticalSpacer">
