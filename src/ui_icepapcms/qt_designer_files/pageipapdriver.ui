@@ -1479,14 +1479,14 @@ p, li { white-space: pre-wrap; }
        <item row="3" column="1" rowspan="3">
         <widget class="QGroupBox" name="groupBox_2">
          <property name="title">
-          <string>HOME/SRCH1</string>
+          <string>HOME/SRCH</string>
          </property>
          <widget class="QComboBox" name="cbHomeSrch1">
           <property name="geometry">
            <rect>
             <x>10</x>
             <y>20</y>
-            <width>151</width>
+            <width>51</width>
             <height>31</height>
            </rect>
           </property>
@@ -1504,9 +1504,9 @@ p, li { white-space: pre-wrap; }
          <widget class="QComboBox" name="cbHomeSrch2">
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>60</y>
-            <width>151</width>
+            <x>60</x>
+            <y>20</y>
+            <width>51</width>
             <height>30</height>
            </rect>
           </property>
@@ -1532,9 +1532,9 @@ p, li { white-space: pre-wrap; }
           </property>
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>100</y>
-            <width>151</width>
+            <x>110</x>
+            <y>20</y>
+            <width>51</width>
             <height>30</height>
            </rect>
           </property>
@@ -1552,10 +1552,10 @@ p, li { white-space: pre-wrap; }
          <widget class="QPushButton" name="btnHomeSrchGo">
           <property name="geometry">
            <rect>
-            <x>170</x>
-            <y>20</y>
+            <x>10</x>
+            <y>50</y>
             <width>41</width>
-            <height>151</height>
+            <height>31</height>
            </rect>
           </property>
           <property name="text">
@@ -1568,9 +1568,9 @@ p, li { white-space: pre-wrap; }
           </property>
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>140</y>
-            <width>151</width>
+            <x>160</x>
+            <y>20</y>
+            <width>51</width>
             <height>30</height>
            </rect>
           </property>
@@ -1584,6 +1584,32 @@ p, li { white-space: pre-wrap; }
             <string>-1</string>
            </property>
           </item>
+         </widget>
+         <widget class="QTextBrowser" name="homeBrowser">
+          <property name="geometry">
+           <rect>
+            <x>60</x>
+            <y>50</y>
+            <width>151</width>
+            <height>111</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="btnHomeStat">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>80</y>
+            <width>41</width>
+            <height>28</height>
+           </rect>
+          </property>
+          <property name="toolTip">
+           <string/>
+          </property>
+          <property name="text">
+           <string>Update</string>
+          </property>
          </widget>
         </widget>
        </item>
@@ -1696,104 +1722,7 @@ p, li { white-space: pre-wrap; }
            <property name="spacing">
             <number>6</number>
            </property>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="btnSetPos">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>30</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>30</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Set</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0" colspan="2">
-            <widget class="QLabel" name="textLabel3_6">
-             <property name="font">
-              <font>
-               <pointsize>8</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Position</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QComboBox" name="cb_pos_sel">
-             <item>
-              <property name="text">
-               <string>Axis</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Indexer</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>ExtErr</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>ShftEnc</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>TgtEnc</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>EncIn</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>InPos</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>AbsEnc</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <spacer>
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="1" column="3">
-            <widget class="QLineEdit" name="txtPos"/>
-           </item>
-           <item row="2" column="1" colspan="3">
+           <item row="2" column="1" colspan="4">
             <widget class="QLCDNumber" name="LCDPositionTest">
              <property name="minimumSize">
               <size>
@@ -1947,25 +1876,8 @@ p, li { white-space: pre-wrap; }
              </property>
             </widget>
            </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="Line" name="line_2">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QGridLayout">
-           <property name="margin">
-            <number>2</number>
-           </property>
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <item row="2" column="1">
-            <widget class="QPushButton" name="btnSetEnc">
+           <item row="1" column="1">
+            <widget class="QPushButton" name="btnSetPos">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -1990,22 +1902,19 @@ p, li { white-space: pre-wrap; }
             </widget>
            </item>
            <item row="0" column="0" colspan="2">
-            <widget class="QLabel" name="textLabel3_5">
+            <widget class="QLabel" name="textLabel3_6">
              <property name="font">
               <font>
                <pointsize>8</pointsize>
               </font>
              </property>
              <property name="text">
-              <string>Encoder</string>
+              <string>Position</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="3">
-            <widget class="QComboBox" name="cb_enc_sel">
-             <property name="currentIndex">
-              <number>5</number>
-             </property>
+           <item row="0" column="4">
+            <widget class="QComboBox" name="cb_pos_sel">
              <item>
               <property name="text">
                <string>Axis</string>
@@ -2048,7 +1957,7 @@ p, li { white-space: pre-wrap; }
              </item>
             </widget>
            </item>
-           <item row="0" column="2">
+           <item row="0" column="3">
             <spacer>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -2061,10 +1970,34 @@ p, li { white-space: pre-wrap; }
              </property>
             </spacer>
            </item>
-           <item row="2" column="3">
-            <widget class="QLineEdit" name="txtEnc"/>
+           <item row="1" column="4">
+            <widget class="QLineEdit" name="txtPos"/>
            </item>
-           <item row="3" column="1" colspan="3">
+          </layout>
+         </item>
+         <item>
+          <widget class="Line" name="line_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QGridLayout">
+           <property name="margin">
+            <number>2</number>
+           </property>
+           <property name="spacing">
+            <number>6</number>
+           </property>
+           <item row="1" column="1">
+            <widget class="QCheckBox" name="chkEctsTurn">
+             <property name="text">
+              <string>Ects/turn</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1" colspan="4">
             <widget class="QLCDNumber" name="LCDEncoder">
              <property name="minimumSize">
               <size>
@@ -2217,6 +2150,113 @@ p, li { white-space: pre-wrap; }
               <enum>QLCDNumber::Flat</enum>
              </property>
             </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="txtEctsTurn">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0" colspan="2">
+            <widget class="QLabel" name="textLabel3_5">
+             <property name="font">
+              <font>
+               <pointsize>8</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Encoder</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="QComboBox" name="cb_enc_sel">
+             <property name="currentIndex">
+              <number>5</number>
+             </property>
+             <item>
+              <property name="text">
+               <string>Axis</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Indexer</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>ExtErr</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>ShftEnc</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>TgtEnc</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>EncIn</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>InPos</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>AbsEnc</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QPushButton" name="btnSetEnc">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>30</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>30</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Set</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4">
+            <widget class="QLineEdit" name="txtEnc"/>
+           </item>
+           <item row="0" column="2">
+            <spacer>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
            </item>
           </layout>
          </item>

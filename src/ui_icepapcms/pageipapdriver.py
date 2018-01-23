@@ -186,7 +186,9 @@ class PageiPapDriver(QtGui.QWidget):
 
         self.dbStartupConfig = None
 
-
+        self.ecpmt_just_enabled = False
+        self.step_ini = 0
+        self.enc_ini = 0
 
     def signalConnections(self):
         QtCore.QObject.connect(self.ui.btnBlink,QtCore.SIGNAL("pressed()"),self.btnBlink_on_press)
@@ -234,6 +236,8 @@ class PageiPapDriver(QtGui.QWidget):
         self.ui.cbHomeSrch1.currentIndexChanged.connect(self.cbHomeSrch1Changed)
         self.ui.cbHomeSrch2.currentIndexChanged.connect(self.cbHomeSrch2Changed)
         self.ui.btnHomeSrchGo.clicked.connect(self.doHomeSrch)
+        self.ui.btnHomeStat.clicked.connect(self.doHomeStat)
+        self.ui.chkEctsTurn.stateChanged.connect(self.enableEctsPerTurnCalculation)
 
     def highlightWidget(self, widget):
         # AGAIN, COMMAND WIDGETS ARE ONLY CHECKED IN THE QCOMBOBOX ELIF SECTION
@@ -1520,6 +1524,21 @@ class PageiPapDriver(QtGui.QWidget):
         enc_sel = str(self.ui.cb_enc_sel.currentText())
         (status, power, position) = self._manager.getDriverTestStatus(self.icepap_driver.icepapsystem_name, self.icepap_driver.addr, pos_sel, enc_sel)
 
+        step_now = position[0]
+        enc_now = position[1]
+        if self.ecpmt_just_enabled:
+            self.step_ini = position[0]
+            self.enc_ini = position[1]
+            self.ecpmt_just_enabled = False
+            print self.step_ini, self.enc_ini
+        if self.ui.chkEctsTurn.isChecked():
+            #print "upd"
+            if (step_now - self.step_ini) != 0:
+                enc_cts_per_motor_turn = (enc_now - self.enc_ini) * int(self.axis.cfgANSTEP.value()) / ((step_now - self.step_ini) * int(self.axis.cfgANTURN.value()))
+            else:
+                enc_cts_per_motor_turn = 0
+            self.ui.txtEctsTurn.setText(str(enc_cts_per_motor_turn))
+
         #self.StepSize = self.ui.sbFactor.value()
         disabled = IcepapStatus.isDisabled(status)
         moving = IcepapStatus.isMoving(status)
@@ -1595,6 +1614,10 @@ class PageiPapDriver(QtGui.QWidget):
         self.ui.LCDPositionTest.display(position[0])
         self.ui.LCDEncoder.display(position[1])
 
+    def enableEctsPerTurnCalculation(self):
+        self.ecpmt_just_enabled = True
+        #print "ecpt " + str(self.ecpmt_just_enabled)
+
     def addDialogCurves(self):
         DialogCurves(self, self.icepap_driver)
 
@@ -1622,6 +1645,28 @@ class PageiPapDriver(QtGui.QWidget):
         if (self.ui.cbHomeSrch1.currentText() == 'SRCH') and (self.ui.cbHomeSrch2.currentText() not in ['Lim-', 'Lim+']):
             command.append(' ' + self.ui.cbHomeSrch3.currentText() + ' ' + self.ui.cbHomeSrch4.currentText())
         IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteCommand(str(command))
+
+    def doHomeStat(self):
+        a = self.icepap_driver.addr
+        #self.ui.homeBrowser.setText("updated "+self.ui.cbHomeSrch1.currentText())
+        if (self.ui.cbHomeSrch1.currentText() == 'HOME'):
+            command = str(a) + ':?HOMESTAT'
+            txt = IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            command = str(a) + ':?HOMEPOS AXIS'
+            txt = txt + "\nPAxis " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            command = str(a) + ':?HOMEPOS TGTENC'
+            txt = txt + "\nPTgt " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            command = str(a) + ':?HOMEPOS SHFTENC'
+            txt = txt + "\nPShft " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            command = str(a) + ':?HOMEENC TGTENC'
+            txt = txt + "\nETgt " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            command = str(a) + ':?HOMEENC SHFTENC'
+            txt = txt + "\nEShft " + IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            self.ui.homeBrowser.setText(txt)
+        else:
+            command = str(a) + ':?SRCHSTAT'
+            txt = IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteReadCommand(str(command))
+            self.ui.homeBrowser.setText(txt)
 
     def btnGO_on_click(self):
         new_position = self.ui.txtMvAbsolute.text()
