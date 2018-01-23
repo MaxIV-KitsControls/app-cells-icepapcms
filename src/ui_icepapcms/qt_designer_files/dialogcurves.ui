@@ -1364,7 +1364,7 @@
      <widget class="QComboBox" name="cbDriver"/>
     </item>
     <item>
-     <widget class="QComboBox" name="cbMagnitude"/>
+     <widget class="QComboBox" name="cbSignals"/>
     </item>
     <item>
      <widget class="QComboBox" name="cbPlotAxis"/>
@@ -1375,9 +1375,6 @@
        <string>Add</string>
       </property>
      </widget>
-    </item>
-    <item>
-     <widget class="QComboBox" name="cbCurves"/>
     </item>
     <item>
      <widget class="QPushButton" name="btnShift">
@@ -1392,6 +1389,9 @@
        <string>Remove</string>
       </property>
      </widget>
+    </item>
+    <item>
+     <widget class="QListWidget" name="listCurves"/>
     </item>
     <item>
      <spacer name="verticalSpacer">

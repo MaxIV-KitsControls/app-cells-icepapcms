@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Mon Jan 22 17:46:46 2018
+# Created: Tue Jan 23 08:17:04 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -469,24 +469,24 @@ class Ui_DialogCurves(object):
         self.cbDriver = QtGui.QComboBox(self.verticalLayoutWidget)
         self.cbDriver.setObjectName(_fromUtf8("cbDriver"))
         self.verticalLayout_2.addWidget(self.cbDriver)
-        self.cbMagnitude = QtGui.QComboBox(self.verticalLayoutWidget)
-        self.cbMagnitude.setObjectName(_fromUtf8("cbMagnitude"))
-        self.verticalLayout_2.addWidget(self.cbMagnitude)
+        self.cbSignals = QtGui.QComboBox(self.verticalLayoutWidget)
+        self.cbSignals.setObjectName(_fromUtf8("cbSignals"))
+        self.verticalLayout_2.addWidget(self.cbSignals)
         self.cbPlotAxis = QtGui.QComboBox(self.verticalLayoutWidget)
         self.cbPlotAxis.setObjectName(_fromUtf8("cbPlotAxis"))
         self.verticalLayout_2.addWidget(self.cbPlotAxis)
         self.btnAdd = QtGui.QPushButton(self.verticalLayoutWidget)
         self.btnAdd.setObjectName(_fromUtf8("btnAdd"))
         self.verticalLayout_2.addWidget(self.btnAdd)
-        self.cbCurves = QtGui.QComboBox(self.verticalLayoutWidget)
-        self.cbCurves.setObjectName(_fromUtf8("cbCurves"))
-        self.verticalLayout_2.addWidget(self.cbCurves)
         self.btnShift = QtGui.QPushButton(self.verticalLayoutWidget)
         self.btnShift.setObjectName(_fromUtf8("btnShift"))
         self.verticalLayout_2.addWidget(self.btnShift)
         self.btnRemove = QtGui.QPushButton(self.verticalLayoutWidget)
         self.btnRemove.setObjectName(_fromUtf8("btnRemove"))
         self.verticalLayout_2.addWidget(self.btnRemove)
+        self.listCurves = QtGui.QListWidget(self.verticalLayoutWidget)
+        self.listCurves.setObjectName(_fromUtf8("listCurves"))
+        self.verticalLayout_2.addWidget(self.listCurves)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem)
 
