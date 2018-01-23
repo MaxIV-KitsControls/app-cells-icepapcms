@@ -7,20 +7,27 @@ import time
 
 class CurveItem:
 
-    def __init__(self, widget, source, col, width, signal='', driver=0, plotAxis=0):
+    #def __init__(self, widget, source, col, width, signal='', driver=0, plotAxisNb=0, plotAxis=None):
+    def __init__(self, widget, source, col, width, signal='', driver=0, plotAxisNb=0):
         self.source = source
         self.arrayTime = []
         self.arrayVal = []
         self.signal = signal
         self.driver = driver
-        self.plotAxis = plotAxis
+        self.plotAxisNb = plotAxisNb
         self.col = col
+        self.width = width
         self.getCommand()
         print self.command, self.params
-        self.curve = widget.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
+        #self.curve = widget.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
+        #self.curve has to be a PlotDataItem,
+        #self.curve = plotAxis.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
+
+    def renewCurve(self, plotAxis):
+        self.curve = plotAxis.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': self.col, 'width': self.width})
 
     def getText(self):
-        return '%s:%s:%s'%(self.driver, self.signal, self.plotAxis)
+        return '%s:%s:%s'%(self.driver, self.signal, self.plotAxisNb)
 
     def getCommand(self):
         if self.signal.startswith('Pos'):
@@ -60,16 +67,35 @@ class DialogCurves(QtGui.QDialog):
         self.vb.enableAutoRange(axis=self.vb.YAxis)
         self.curveItems = []
         self.ui.gridLayout.addWidget(self.pw)
-        self.connectSignals()
-        self.ticker.start(self.tickInterval)
+
         self.last_now = None
+
+        self.axes = []
+        self.axes.append(self.pw.getPlotItem())
+        self.axes.append(pg.ViewBox())
+        self.axes[0].showAxis('right')
+        self.axes[0].scene().addItem(self.axes[1])
+        self.axes[0].getAxis('right').linkToView(self.axes[1])
+        self.axes[1].setXLink(self.axes[0])
+        self.axes[0].getAxis('right').setLabel('axis2')
+        self.axes.append(pg.ViewBox())
+        self.ax3 = pg.AxisItem('right')
+        self.axes[0].layout.addItem(self.ax3, 2, 3)
+        self.axes[0].scene().addItem(self.axes[2])
+        self.ax3.linkToView(self.axes[2])
+        self.axes[2].setXLink(self.axes[0])
+        self.ax3.setZValue(-10000)
+        #ax3.setLabel('axis 3', color='#ff0000')
+        self.ax3.setLabel('axis 3')
+
 
         self.label = pg.LabelItem(justify='right')
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
-        self.hLine = pg.InfiniteLine(angle=0, movable=False)
+        #self.hLine = pg.InfiniteLine(angle=0, movable=False)
         self.pw.addItem(self.vLine, ignoreBounds=True)
-        self.pw.addItem(self.hLine, ignoreBounds=True)
+        #self.pw.addItem(self.hLine, ignoreBounds=True)
         self.pw.addItem(self.label)
+
 
         self.signals = ['PosAxis', 'PosTgtenc', 'PosShftenc',
                       'PosEncin', 'PosAbsenc', 'PosInpos',
@@ -95,7 +121,7 @@ class DialogCurves(QtGui.QDialog):
             ]
 
         self.maxDrivers = 128
-        self.maxPlotAxes = 4
+        self.maxPlotAxes = 3
         for i in range(1, self.maxDrivers +1):
             self.ui.cbDriver.addItem(str(i))
         for item in self.signals:
@@ -103,31 +129,50 @@ class DialogCurves(QtGui.QDialog):
         for i in range(1, self.maxPlotAxes +1):
             self.ui.cbPlotAxis.addItem(str(i))
 
+
+        self.connectSignals()
+        self.ticker.start(self.tickInterval)
+
+
     def connectSignals(self):
         QtCore.QObject.connect(self.ticker, QtCore.SIGNAL("timeout()"), self.tick)
-        self.ui.radioButtonAxis.toggled.connect(self.radioButtonsToggled)
-        self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis))
-        self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc))
-        self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc))
-        self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn))
-        self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos))
-        self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc))
-        self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure))
-        self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc))
-        self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor))
-        self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1))
-        self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2))
-        self.ui.checkBoxMoving.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMoving))
-        self.ui.checkBoxSettling.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxSettling))
-        self.ui.checkBoxOutOfWin.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxOutOfWin))
-        self.ui.checkBoxReady.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxReady))
-        self.ui.checkBoxStopcode.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxStopcode))
+        #self.ui.radioButtonAxis.toggled.connect(self.radioButtonsToggled)
+        #self.ui.checkBoxAxis.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAxis))
+        #self.ui.checkBoxShiftEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxShiftEnc))
+        #self.ui.checkBoxTgtEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxTgtEnc))
+        #self.ui.checkBoxEncIn.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxEncIn))
+        #self.ui.checkBoxInPos.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxInPos))
+        #self.ui.checkBoxAbsEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxAbsEnc))
+        #self.ui.checkBoxMeasure.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMeasure))
+        #self.ui.checkBoxCtrlEnc.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxCtrlEnc))
+        #self.ui.checkBoxMotor.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMotor))
+        #self.ui.checkBoxDelta1.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta1))
+        #self.ui.checkBoxDelta2.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxDelta2))
+        #self.ui.checkBoxMoving.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxMoving))
+        #self.ui.checkBoxSettling.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxSettling))
+        #self.ui.checkBoxOutOfWin.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxOutOfWin))
+        #self.ui.checkBoxReady.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxReady))
+        #self.ui.checkBoxStopcode.stateChanged.connect(lambda: self.selectedCurve(self.ui.checkBoxStopcode))
         self.ui.btnAdd.clicked.connect(self.addButtonClicked)
         self.ui.btnShift.clicked.connect(self.shiftButtonClicked)
         self.ui.btnRemove.clicked.connect(self.removeButtonClicked)
+        self.ui.btnPause.clicked.connect(self.pauseButtonClicked)
 
         self.proxy = pg.SignalProxy(self.pw.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
 
+        self.axes[0].vb.sigResized.connect(self.updateViews)
+
+    def updateViews(self):
+        ## view has resized; update auxiliary views to match
+
+        self.axes[1].setGeometry(self.axes[0].vb.sceneBoundingRect())
+        self.axes[2].setGeometry(self.axes[0].vb.sceneBoundingRect())
+
+        ## need to re-update linked axes since this was called
+        ## incorrectly while views had different shapes.
+        ## (probably this should be handled in ViewBox.resizeEvent)
+        self.axes[1].linkedViewChanged(self.axes[0].vb, self.axes[1].XAxis)
+        self.axes[2].linkedViewChanged(self.axes[0].vb, self.axes[2].XAxis)
 
     def addButtonClicked(self):
         cb = self.ui.cbSignals
@@ -138,8 +183,11 @@ class DialogCurves(QtGui.QDialog):
                        width=1,
                        signal=self.signals[self.ui.cbSignals.currentIndex()],
                        driver=self.ui.cbDriver.currentIndex() + 1,
-                       plotAxis=self.ui.cbPlotAxis.currentIndex() + 1
+                       plotAxisNb=self.ui.cbPlotAxis.currentIndex() + 1,
+                       #plotAxis = self.axes[self.ui.cbPlotAxis.currentIndex()]
+                       #curve=self.get
                        )
+        self.getCurve(ci)
         self.curveItems.append(ci)
         ci.arrayTime = [time.time() - self.refTime]
         ci.arrayVal = [1]
@@ -156,14 +204,29 @@ class DialogCurves(QtGui.QDialog):
         #ci = self.curveItems[self.ui.cbCurves.currentIndex()]
         index = self.ui.listCurves.currentRow()
         ci = self.curveItems[index]
-        ci.plotAxis = ci.plotAxis%self.maxPlotAxes + 1
+
+        self.removeCurve(ci)
+
+        ci.plotAxisNb = ci.plotAxisNb%self.maxPlotAxes + 1
+        #ci.plotAxis = self.axes[ci.plotAxisNb]
+        self.getCurve(ci)
+        #ci.renewCurve(self.axes[ci.plotAxisNb-1])
+
         #self.ui.cbCurves.setItemText(index, ci.getText())
         self.ui.listCurves.takeItem(index)
         self.ui.listCurves.insertItem(index, ci.getText())
         self.ui.listCurves.setCurrentRow(index)
 
+    def getCurve(self, ci):
+        if ci.plotAxisNb == 1:
+            ci.curve = self.axes[0].plot(x=ci.arrayTime, y=ci.arrayVal, pen={'color': ci.col, 'width': ci.width})
+        else:
+            ci.curve = pg.PlotCurveItem(x=ci.arrayTime, y=ci.arrayVal, pen={'color': ci.col, 'width': ci.width})
+            self.axes[ci.plotAxisNb - 1].addItem(ci.curve)
+
     def removeButtonClicked(self):
         #self.curveItems.remove(self.curveItems[self.ui.cbCurves.currentIndex()])
+        self.removeCurve(self.curveItems[self.ui.listCurves.currentRow()])
         self.curveItems.remove(self.curveItems[self.ui.listCurves.currentRow()])
         #self.ui.cbCurves.removeItem(self.ui.cbCurves.currentIndex())
         self.ui.listCurves.takeItem(self.ui.listCurves.currentRow())
@@ -176,7 +239,7 @@ class DialogCurves(QtGui.QDialog):
             viewRange = self.pw.viewRange()
             xMaxViewed = viewRange[0][1]
             xMinViewed = viewRange[0][0]
-            print "index, xmaxv, xminv ", index, xMaxViewed, xMinViewed
+            #print "index, xmaxv, xminv ", index, xMaxViewed, xMinViewed
             txt = '' + "%0.2f"%(index)
             for i in range(0, len(self.curveItems)):
                 if index > self.curveItems[i].arrayTime[0] and index < self.curveItems[i].arrayTime[-1]:
@@ -188,7 +251,7 @@ class DialogCurves(QtGui.QDialog):
                    "<span style='font-size: 10pt; color: red;'>%s</span>" % (
                     txt))
             self.vLine.setPos(mousePoint.x())
-            self.hLine.setPos(mousePoint.y())
+            #self.hLine.setPos(mousePoint.y())
 
     def findIndexInTimes(self, aList, value):
         for i in range(0, len(aList)):
@@ -196,23 +259,6 @@ class DialogCurves(QtGui.QDialog):
                 return i
         return -1
 
-    def getVal(self, source):
-        f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
-        ok = True
-        val = 0.0
-        try:
-            if source == 'Axis - TgtEnc':
-                val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'TgtEnc'))
-            elif source == 'Axis - Motor':
-                val = float(f(self.icepapAddress, 'Axis')) - float(f(self.icepapAddress, 'Motor'))
-            elif source in ['MOVING', 'SETTLING', 'OUTOFWIN', 'READY', 'STOPCODE']:
-                val = float(self.driver.getDecodedStatus(self.icepapAddress).get(str(source.toLower()))[0])
-            else:
-                val = float(f(self.icepapAddress, source))
-        except Exception, e:
-            ok = False
-            print(e)
-        return ok, val
 
     def getValue(self, ci):
         #f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
@@ -234,12 +280,6 @@ class DialogCurves(QtGui.QDialog):
             ok = False
             print(e)
         return ok, val
-
-    def radioButtonsToggled(self):
-        self.refTime = time.time()
-        for curveItem in self.curveItems:
-            curveItem.arrayTime = []
-            curveItem.arrayVal = []
 
     def addedCurve(self, ci):
         checked = True
@@ -267,34 +307,17 @@ class DialogCurves(QtGui.QDialog):
                     self.vb.removeItem(ci.curve)
                     self.curveItems.remove(ci)
 
-    def selectedCurve(self, cb):
-        checked = cb.checkState()
-        source = cb.text()
-        if checked == 2:
-            (ok, val) = self.getVal(source)
-            if ok:
-                col = cb.palette().color(cb.palette().Active, cb.palette().WindowText)
-                w = 2 if source in ['Axis - TgtEnc', 'Axis - Motor'] else 1
-                ci = CurveItem(self.pw, source, col, w)
-                self.curveItems.append(ci)
-                ci.arrayTime = [time.time() - self.refTime]
-                ci.arrayVal = [val]
-                ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
-            else:
-                print('Failed to create curve for ' + source + '!')
-        else:
-            for ci in self.curveItems:
-                if ci.source == source:
-                    self.vb.removeItem(ci.curve)
-                    self.curveItems.remove(ci)
+    def removeCurve(self, ci):
+        self.vb.removeItem(ci.curve)
+
 
     def pauseButtonClicked(self):
         if self.ticker.isActive():
             self.ticker.stop()
-            self.ui.buttonPause.setText('Run')
+            self.ui.btnPause.setText('Run')
         else:
             self.ticker.start(self.tickInterval)
-            self.ui.buttonPause.setText('Pause')
+            self.ui.btnPause.setText('Pause')
 
     def tick(self):
         now = time.time() - self.refTime
