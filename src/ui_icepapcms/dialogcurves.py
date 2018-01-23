@@ -365,10 +365,6 @@ class DialogCurves(QtGui.QDialog):
         #print "range:", self.pw.viewRange()
         pwrange = self.pw.viewRange()
         pwXRangeLength = pwrange[0][1] - pwrange[0][0]
-        print pwrange
-        print pwXRangeLength
-        print now
-        print [now - pwXRangeLength, now]
         if pwrange[0][1] <= self.last_now:
             #self.pw.setXRange(now - self.xTimeLength, now)
             self.pw.setXRange(now - pwXRangeLength, now, padding = 0)
