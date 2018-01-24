@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ipapconsole.ui'
 #
-# Created: Tue Jan 23 14:19:52 2018
+# Created: Wed Jan 24 10:23:37 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
