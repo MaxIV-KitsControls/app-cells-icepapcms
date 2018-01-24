@@ -70,6 +70,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="btnCurrents">
+       <property name="text">
+        <string>Currents</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="btnPause">
        <property name="text">
         <string>Pause</string>

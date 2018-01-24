@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Wed Jan 24 10:23:38 2018
+# Created: Wed Jan 24 17:07:50 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -60,6 +60,9 @@ class Ui_DialogCurves(object):
         self.btnCLoop = QtGui.QPushButton(DialogCurves)
         self.btnCLoop.setObjectName(_fromUtf8("btnCLoop"))
         self.verticalLayout_2.addWidget(self.btnCLoop)
+        self.btnCurrents = QtGui.QPushButton(DialogCurves)
+        self.btnCurrents.setObjectName(_fromUtf8("btnCurrents"))
+        self.verticalLayout_2.addWidget(self.btnCurrents)
         self.btnPause = QtGui.QPushButton(DialogCurves)
         self.btnPause.setObjectName(_fromUtf8("btnPause"))
         self.verticalLayout_2.addWidget(self.btnPause)
@@ -77,5 +80,6 @@ class Ui_DialogCurves(object):
         self.btnShift.setText(_translate("DialogCurves", "Shift", None))
         self.btnRemove.setText(_translate("DialogCurves", "Remove", None))
         self.btnCLoop.setText(_translate("DialogCurves", "CLoop", None))
+        self.btnCurrents.setText(_translate("DialogCurves", "Currents", None))
         self.btnPause.setText(_translate("DialogCurves", "Pause", None))
 

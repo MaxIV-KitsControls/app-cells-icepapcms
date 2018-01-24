@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogstatusinfo.ui'
 #
-# Created: Wed Jan 24 10:23:38 2018
+# Created: Wed Jan 24 17:07:50 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -45,6 +45,10 @@ class Ui_DialogStatusInfo(object):
         self.txt1Command = QtGui.QLineEdit(self.layoutWidget)
         self.txt1Command.setObjectName(_fromUtf8("txt1Command"))
         self.horizontalLayout.addWidget(self.txt1Command)
+        self.cbAllDrivers = QtGui.QComboBox(self.layoutWidget)
+        self.cbAllDrivers.setEditable(True)
+        self.cbAllDrivers.setObjectName(_fromUtf8("cbAllDrivers"))
+        self.horizontalLayout.addWidget(self.cbAllDrivers)
 
         self.retranslateUi(DialogStatusInfo)
         QtCore.QMetaObject.connectSlotsByName(DialogStatusInfo)

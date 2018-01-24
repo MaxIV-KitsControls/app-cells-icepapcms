@@ -188,6 +188,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.btnRemove.clicked.connect(self.removeButtonClicked)
         self.ui.btnPause.clicked.connect(self.pauseButtonClicked)
         self.ui.btnCLoop.clicked.connect(self.prepareCloop)
+        self.ui.btnCurrents.clicked.connect(self.prepareCurrents)
 
         self.proxy = pg.SignalProxy(self.pw.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
 
@@ -301,6 +302,7 @@ class DialogCurves(QtGui.QDialog):
             txt = "<span style='font-size: 10pt; color: white; font-weight: bold'>"
             txt = txt + "%0.2f"%(index)
             txt = txt + "</span>"
+            txt1 = ''
             for i in range(0, len(self.curveItems)):
                 if index > self.curveItems[i].arrayTime[0] and index < self.curveItems[i].arrayTime[-1]:
                     aTimeIndex = self.findIndexInTimes(self.curveItems[i].arrayTime, index)
@@ -309,7 +311,8 @@ class DialogCurves(QtGui.QDialog):
                     #txt = txt + ' ' + "%0.2f"%(self.curveItems[i].arrayTime[aTimeIndex])
                     txt = txt + ' ' + str(self.curveItems[i].arrayVal[aTimeIndex])
                     txt = txt + "</span>"
-            self.pw.setTitle("%s" % (txt))
+                    txt1 = txt1 + "<span style='font-size: 8pt; color: %s; font-weight: bold'>%s </span>"%(self.curveItems[i].col.name(), self.curveItems[i].getText())
+            self.pw.setTitle("%s<br>%s" % (txt1,txt))
             self.vLine.setPos(mousePoint.x())
             #self.hLine.setPos(mousePoint.y())
 
@@ -363,6 +366,13 @@ class DialogCurves(QtGui.QDialog):
         self.addSignal(18, 3)
         self.addSignal(19, 3)
         self.addSignal(20, 3)
+
+    def prepareCurrents(self):
+        for i in range(0, self.ui.listCurves.count()):
+            self.removeCurve(i)
+        self.addSignal(0, 1)# signalNb, plotAxisNb)
+        self.addSignal(25, 2)
+        self.addSignal(28, 3)
 
     def pauseButtonClicked(self):
         if self.ticker.isActive():
