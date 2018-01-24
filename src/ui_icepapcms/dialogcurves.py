@@ -110,6 +110,7 @@ class DialogCurves(QtGui.QDialog):
                       'EncEncin', 'EncAbsenc', 'EncInpos',
                       'StatReady', 'StatMoving', 'StatSettling',
                       'StatOutofwin', 'StatStopcode',
+                      'StatWarning', 'StatLim+', 'StatLim-', 'StatHome',
                       'MeasI', 'MeasIa', 'MeasIb',
                       'MeasVm'
                       ]
@@ -121,6 +122,7 @@ class DialogCurves(QtGui.QDialog):
             QtGui.QColor(0, 255, 255), QtGui.QColor(255, 170, 255), QtGui.QColor(255, 255, 127),
             QtGui.QColor(255, 0, 0), QtGui.QColor(255, 0, 0), QtGui.QColor(0, 255, 0),
             QtGui.QColor(255, 255, 255), QtGui.QColor(51, 153, 255),
+            QtGui.QColor(255, 0, 255), QtGui.QColor(255, 153, 204), QtGui.QColor(204, 153, 102), QtGui.QColor(255, 204, 0),
             QtGui.QColor(255, 0, 255), QtGui.QColor(255, 153, 204), QtGui.QColor(204, 153, 102),
             QtGui.QColor(255, 204, 0)
             ]
@@ -132,6 +134,7 @@ class DialogCurves(QtGui.QDialog):
                       1, 1, 1,
                       5, 1, 3,
                       2, 1,
+                      1, 1, 1, 1,
                       1, 1, 1,
                       1]
         self.penStyles = [QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
@@ -142,6 +145,8 @@ class DialogCurves(QtGui.QDialog):
                           QtCore.Qt.DotLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine,
                           QtCore.Qt.DotLine, QtCore.Qt.DashLine, QtCore.Qt.DotLine,
                           QtCore.Qt.SolidLine, QtCore.Qt.DashLine,
+                          QtCore.Qt.DashLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine,
+                          QtCore.Qt.DashLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine,
                           QtCore.Qt.DashLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine,
                           QtCore.Qt.DashLine]
 
