@@ -8,13 +8,14 @@ import time
 class CurveItem:
 
     #def __init__(self, widget, source, col, width, signal='', driver=0, plotAxisNb=0, plotAxis=None):
-    def __init__(self, widget, source, col, width, signal='', driver=0, plotAxisNb=0):
+    def __init__(self, widget, source, col, width, style=QtCore.Qt.SolidLine, signal='', driver=0, plotAxisNb=0):
         self.source = source
         self.arrayTime = []
         self.arrayVal = []
         self.signal = signal
         self.driver = driver
         self.plotAxisNb = plotAxisNb
+        self.style = style
         self.col = col
         self.width = width
         self.getCommand()
@@ -24,7 +25,7 @@ class CurveItem:
         #self.curve = plotAxis.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
 
     def renewCurve(self, plotAxis):
-        self.curve = plotAxis.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': self.col, 'width': self.width})
+        self.curve = plotAxis.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': self.col, 'width': self.width, 'style': self.style})
 
     def getText(self):
         return '%s:%s:%s'%(self.driver, self.signal, self.plotAxisNb)
@@ -118,11 +119,31 @@ class DialogCurves(QtGui.QDialog):
             QtGui.QColor(255, 204, 0), QtGui.QColor(153, 255, 153), QtGui.QColor(255, 170, 0),
             QtGui.QColor(255, 0, 0),
             QtGui.QColor(0, 255, 255), QtGui.QColor(255, 170, 255), QtGui.QColor(255, 255, 127),
-            QtGui.QColor(255, 255, 0), QtGui.QColor(255, 0, 0), QtGui.QColor(0, 255, 0),
+            QtGui.QColor(255, 0, 0), QtGui.QColor(255, 0, 0), QtGui.QColor(0, 255, 0),
             QtGui.QColor(255, 255, 255), QtGui.QColor(51, 153, 255),
             QtGui.QColor(255, 0, 255), QtGui.QColor(255, 153, 204), QtGui.QColor(204, 153, 102),
             QtGui.QColor(255, 204, 0)
             ]
+        self.penWidths = [1, 1, 1,
+                      1, 1, 1,
+                      1, 1, 1,
+                      2, 5, 2,
+                      3,
+                      1, 1, 1,
+                      5, 1, 3,
+                      2, 1,
+                      1, 1, 1,
+                      1]
+        self.penStyles = [QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
+                          QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
+                          QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
+                          QtCore.Qt.SolidLine, QtCore.Qt.DotLine, QtCore.Qt.DashLine,
+                          QtCore.Qt.DashLine,
+                          QtCore.Qt.DotLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine,
+                          QtCore.Qt.DotLine, QtCore.Qt.DashLine, QtCore.Qt.DotLine,
+                          QtCore.Qt.SolidLine, QtCore.Qt.DashLine,
+                          QtCore.Qt.DashLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine,
+                          QtCore.Qt.DashLine]
 
         self.maxDrivers = 128
         self.maxPlotAxes = 3
@@ -185,7 +206,8 @@ class DialogCurves(QtGui.QDialog):
         ci = CurveItem(self.pw,
                        source='',
                        col=self.colors[self.ui.cbSignals.currentIndex()],
-                       width=1,
+                       width=self.penWidths[self.ui.cbSignals.currentIndex()],
+                       style=self.penStyles[self.ui.cbSignals.currentIndex()],
                        signal=self.signals[self.ui.cbSignals.currentIndex()],
                        driver=self.ui.cbDriver.currentIndex() + 1,
                        plotAxisNb=self.ui.cbPlotAxis.currentIndex() + 1,
@@ -208,7 +230,8 @@ class DialogCurves(QtGui.QDialog):
         ci = CurveItem(self.pw,
                        source='',
                        col=self.colors[signalNb],
-                       width=1,
+                       width=self.penWidths[signalNb],
+                       style=self.penStyles[signalNb],
                        signal=self.signals[signalNb],
                        driver=self.icepapAddress,
                        plotAxisNb=plotAxisNb,
@@ -247,9 +270,9 @@ class DialogCurves(QtGui.QDialog):
 
     def getCurve(self, ci):
         if ci.plotAxisNb == 1:
-            ci.curve = self.axes[0].plot(x=ci.arrayTime, y=ci.arrayVal, pen={'color': ci.col, 'width': ci.width})
+            ci.curve = self.axes[0].plot(x=ci.arrayTime, y=ci.arrayVal, pen={'color': ci.col, 'width': ci.width, 'style' : ci.style})
         else:
-            ci.curve = pg.PlotCurveItem(x=ci.arrayTime, y=ci.arrayVal, pen={'color': ci.col, 'width': ci.width})
+            ci.curve = pg.PlotCurveItem(x=ci.arrayTime, y=ci.arrayVal, pen={'color': ci.col, 'width': ci.width, 'style' : ci.style})
             self.axes[ci.plotAxisNb - 1].addItem(ci.curve)
 
     def removeButtonClicked(self):
@@ -278,7 +301,7 @@ class DialogCurves(QtGui.QDialog):
                     #txt = txt + ' ' + "%0.2f"%(self.curveItems[i].arrayTime[aTimeIndex])
                     txt = txt + ' ' + str(self.curveItems[i].arrayVal[aTimeIndex])
             self.pw.setTitle(
-                   "<span style='font-size: 10pt; color: red;'>%s</span>" % (
+                   "<span style='font-size: 10pt; color: red; font-weight: bold'>%s</span>" % (
                     txt))
             self.vLine.setPos(mousePoint.x())
             #self.hLine.setPos(mousePoint.y())
@@ -312,30 +335,13 @@ class DialogCurves(QtGui.QDialog):
         return ok, val
 
     def addedCurve(self, ci):
-        checked = True
-        source = ci.signal
-        if checked == True:
-            (ok, val) = self.getValue(ci)
-            if ok:
-                pal = self.ui.listCurves.palette()
-                col = pal.color(pal.Active, pal.WindowText)
-                if ci.signal.startswith('Diff'):
-                    w = 2
-                else:
-                    w = 1
-                # in ['Axis - TgtEnc', 'Axis - Motor'] else 1
-                #ci = CurveItem(self.pw, source, col, w)
-                #self.curveItems.append(ci)
-                ci.arrayTime = [time.time() - self.refTime]
-                ci.arrayVal = [val]
-                ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
-            else:
-                print('Failed to create curve for ' + ci.signal + '!')
+        (ok, val) = self.getValue(ci)
+        if ok:
+            ci.arrayTime = [time.time() - self.refTime]
+            ci.arrayVal = [val]
+            ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
         else:
-            for ci in self.curveItems:
-                if ci.source == source:
-                    self.vb.removeItem(ci.curve)
-                    self.curveItems.remove(ci)
+            print('Failed to create curve for ' + ci.signal + '!')
 
     def removeCurve(self, ci):
         self.vb.removeItem(ci.curve)
