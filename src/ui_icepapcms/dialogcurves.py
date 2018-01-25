@@ -46,6 +46,8 @@ class CurveItem:
         elif self.signal.startswith('Stat'):
             self.command = 'STATUS'
             self.params = [self.signal.replace('Stat', '')]
+        print self.command
+        print self.params
 
 
 class DialogCurves(QtGui.QDialog):
@@ -129,7 +131,7 @@ class DialogCurves(QtGui.QDialog):
         self.penWidths = [1, 1, 1,
                       1, 1, 1,
                       1, 1, 1,
-                      2, 5, 2,
+                      1, 3, 2,
                       3,
                       1, 1, 1,
                       5, 1, 3,
@@ -306,13 +308,17 @@ class DialogCurves(QtGui.QDialog):
             for i in range(0, len(self.curveItems)):
                 if index > self.curveItems[i].arrayTime[0] and index < self.curveItems[i].arrayTime[-1]:
                     aTimeIndex = self.findIndexInTimes(self.curveItems[i].arrayTime, index)
-                    txt = txt + "<span style='font-size: 10pt; color: %s; font-weight: bold'>"%(self.curveItems[i].col.name())
+                    txt = txt + "<span style='font-size: 8pt; color: %s; font-weight: bold'>"%(self.curveItems[i].col.name())
                     txt = txt + ' | '
                     #txt = txt + ' ' + "%0.2f"%(self.curveItems[i].arrayTime[aTimeIndex])
                     txt = txt + ' ' + str(self.curveItems[i].arrayVal[aTimeIndex])
                     txt = txt + "</span>"
-                    txt1 = txt1 + "<span style='font-size: 8pt; color: %s; font-weight: bold'>%s </span>"%(self.curveItems[i].col.name(), self.curveItems[i].getText())
-            self.pw.setTitle("%s<br>%s" % (txt1,txt))
+                    #txt1 = txt1 + "<span style='font-size: 7pt; color: %s;'>%s </span>"%(self.curveItems[i].col.name(), self.curveItems[i].getText())
+                    if i%4 == 3:
+                        #txt1 = txt1 + "<br>"
+                        txt = txt + "<br>"
+	    #self.pw.setTitle("%s<br>%s" % (txt1,txt))
+	    self.pw.setTitle("%s" % (txt))
             self.vLine.setPos(mousePoint.x())
             #self.hLine.setPos(mousePoint.y())
 
@@ -326,11 +332,10 @@ class DialogCurves(QtGui.QDialog):
     def getValue(self, ci):
         #f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
         ok = True
-        val = 0.0
+        val = 0.0 
         try:
-            if ci.signal.startswith('Diff'):
-                val = float(self.driver.getPosition(ci.driver)) - \
-                      float(self.driver.getPositionFromBoard(ci.driver, ci.params[1]))
+            if ci.signal.startswith('Dif'):
+		val = float(self.driver.getPositionFromBoard(ci.driver, 'AXIS')) - float(self.driver.getPositionFromBoard(ci.driver, ci.params[1]))
             elif ci.command == 'POS':
                 val = float(self.driver.getPositionFromBoard(ci.driver, ci.params[0]))
             elif ci.command == 'ENC':
@@ -388,7 +393,7 @@ class DialogCurves(QtGui.QDialog):
         #print "range:", self.pw.viewRange()
         pwrange = self.pw.viewRange()
         pwXRangeLength = pwrange[0][1] - pwrange[0][0]
-        if pwrange[0][1] <= self.last_now:
+        if pwrange[0][1] >= self.last_now:
             #self.pw.setXRange(now - self.xTimeLength, now)
             self.pw.setXRange(now - pwXRangeLength, now, padding = 0)
             #self.pw.setXRange(self.pw.viewRange()[0][0],

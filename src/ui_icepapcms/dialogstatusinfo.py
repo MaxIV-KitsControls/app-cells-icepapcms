@@ -18,7 +18,7 @@ class DialogStatusInfo(QtGui.QDialog):
         self.doVstatus()
         self.allDriversCommands = ['?cfg extdisable', '?ver info', '?power',
                                    '?positions', '?warning', '?isg ?ssierrtoggles',
-                                   '#isg ssiwarningrst', 'm ?ver info', 'm ?rdispol'
+                                   '#isg ssiwarningrst', 'm ?ver info', 'm ?rdispol', '?vstatus DISABLE', '?vstatus STOPCODE'
                                    ]
         for cmd in self.allDriversCommands:
             self.ui.cbAllDrivers.addItem(cmd)
@@ -73,7 +73,7 @@ class DialogStatusInfo(QtGui.QDialog):
 
     def sendCommandToDrivers(self):
         sel = '%s'%self.ui.cbAllDrivers.currentText()
-        print sel
+        sel_split = sel.split(' ' )
         txt = ''
         if sel == '?positions':
             print 'pos'
@@ -106,6 +106,19 @@ class DialogStatusInfo(QtGui.QDialog):
                 try:
                     val = self.driver.getVersionInfoDict(contr)
                     txt = txt + '%s '%contr + str(val) + '\n'
+                    self.ui.textBrowser.setText(txt)
+                except Exception, e:
+                    print(e)
+            self.ui.textBrowser.setText(txt)
+        elif sel.startswith('?vstatus') and len(sel_split) == 2:
+            for driver in self.driver.getDriversAlive():
+                try:
+                    comm = ('%s:%s')%(driver, '?vstatus')
+                    val = self.driver.sendWriteReadCommand(comm)
+                    val_lines = val.split('\n')
+                    for l in val_lines:
+                        if sel_split[1] in l: 
+                            txt = txt + '%s '%driver + l + '\n'
                     self.ui.textBrowser.setText(txt)
                 except Exception, e:
                     print(e)
