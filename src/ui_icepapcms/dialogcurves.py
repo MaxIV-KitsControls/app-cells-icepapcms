@@ -46,8 +46,8 @@ class CurveItem:
         elif self.signal.startswith('Stat'):
             self.command = 'STATUS'
             self.params = [self.signal.replace('Stat', '')]
-        print self.command
-        print self.params
+        #print self.command
+        #print self.params
 
 
 class DialogCurves(QtGui.QDialog):
@@ -208,6 +208,17 @@ class DialogCurves(QtGui.QDialog):
         self.axes[1].linkedViewChanged(self.axes[0].vb, self.axes[1].XAxis)
         self.axes[2].linkedViewChanged(self.axes[0].vb, self.axes[2].XAxis)
 
+
+    def updatePlotAxesLabels(self):
+        txt = ['', '', '']
+        for ci in self.curveItems:
+            #txt1 = txt1 + "<span style='font-size: 7pt; color: %s;'>%s </span>"%(self.curveItems[i].col.name(), self.curveItems[i].getText())
+            txt[ci.plotAxisNb - 1] += "<span style='font-size: 8pt; color: %s;'>%s</span>"%(ci.col.name(), ci.getText())
+        print txt
+        self.axes[0].getAxis('left').setLabel(txt[0])
+        self.axes[0].getAxis('right').setLabel(txt[1])
+        self.ax3.setLabel(txt[2])
+            
     def addButtonClicked(self):
         cb = self.ui.cbSignals
         color = cb.palette().color(cb.palette().Active, cb.palette().WindowText)
@@ -234,6 +245,8 @@ class DialogCurves(QtGui.QDialog):
         self.ui.listCurves.item(len(self.curveItems) - 1).setBackground(QtGui.QColor(0,0,0))
 
         #self.ui.listCurves.setCurrentItem(ci.getText())
+        self.updatePlotAxesLabels()
+
     def addSignal(self, signalNb, plotAxisNb):
         ci = CurveItem(self.pw,
                        source='',
@@ -256,6 +269,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.listCurves.setCurrentRow(len(self.curveItems) - 1)
         self.ui.listCurves.item(len(self.curveItems) - 1).setForeground(ci.col)
         self.ui.listCurves.item(len(self.curveItems) - 1).setBackground(QtGui.QColor(0,0,0))
+        self.updatePlotAxesLabels()
 
     def shiftButtonClicked(self):
         #ci = self.curveItems[self.ui.cbCurves.currentIndex()]
@@ -275,6 +289,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.listCurves.item(index).setForeground(ci.col)
         self.ui.listCurves.item(index).setBackground(QtGui.QColor(0,0,0))
         self.ui.listCurves.setCurrentRow(index)
+        self.updatePlotAxesLabels()
 
     def getCurve(self, ci):
         if ci.plotAxisNb == 1:
@@ -291,6 +306,7 @@ class DialogCurves(QtGui.QDialog):
         self.curveItems.remove(self.curveItems[n])
         #self.ui.cbCurves.removeItem(self.ui.cbCurves.currentIndex())
         self.ui.listCurves.takeItem(n)
+        self.updatePlotAxesLabels()
 
     def mouseMoved(self, evt):
         pos = evt[0]  ## using signal proxy turns original arguments into a tuple
