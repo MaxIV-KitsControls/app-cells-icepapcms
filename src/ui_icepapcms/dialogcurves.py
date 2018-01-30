@@ -191,6 +191,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.btnPause.clicked.connect(self.pauseButtonClicked)
         self.ui.btnCLoop.clicked.connect(self.prepareCloop)
         self.ui.btnCurrents.clicked.connect(self.prepareCurrents)
+        self.ui.btnClear.clicked.connect(self.clearData)
 
         self.proxy = pg.SignalProxy(self.pw.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
 
@@ -218,7 +219,7 @@ class DialogCurves(QtGui.QDialog):
         self.axes[0].getAxis('left').setLabel(txt[0])
         self.axes[0].getAxis('right').setLabel(txt[1])
         self.ax3.setLabel(txt[2])
-            
+
     def addButtonClicked(self):
         cb = self.ui.cbSignals
         color = cb.palette().color(cb.palette().Active, cb.palette().WindowText)
@@ -270,6 +271,12 @@ class DialogCurves(QtGui.QDialog):
         self.ui.listCurves.item(len(self.curveItems) - 1).setForeground(ci.col)
         self.ui.listCurves.item(len(self.curveItems) - 1).setBackground(QtGui.QColor(0,0,0))
         self.updatePlotAxesLabels()
+
+    def clearData(self):
+        for ci in self.curveItems:
+            self.arrayTime = []
+            self.arrayData = []
+        self.refTime = time.time()
 
     def shiftButtonClicked(self):
         #ci = self.curveItems[self.ui.cbCurves.currentIndex()]
@@ -333,8 +340,8 @@ class DialogCurves(QtGui.QDialog):
                     if i%4 == 3:
                         #txt1 = txt1 + "<br>"
                         txt = txt + "<br>"
-	    #self.pw.setTitle("%s<br>%s" % (txt1,txt))
-	    self.pw.setTitle("%s" % (txt))
+            #self.pw.setTitle("%s<br>%s" % (txt1,txt))
+            self.pw.setTitle("%s" % (txt))
             self.vLine.setPos(mousePoint.x())
             #self.hLine.setPos(mousePoint.y())
 
@@ -348,10 +355,10 @@ class DialogCurves(QtGui.QDialog):
     def getValue(self, ci):
         #f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
         ok = True
-        val = 0.0 
+        val = 0.0
         try:
             if ci.signal.startswith('Dif'):
-		val = float(self.driver.getPositionFromBoard(ci.driver, 'AXIS')) - float(self.driver.getPositionFromBoard(ci.driver, ci.params[1]))
+                val = float(self.driver.getPositionFromBoard(ci.driver, 'AXIS')) - float(self.driver.getPositionFromBoard(ci.driver, ci.params[1]))
             elif ci.command == 'POS':
                 val = float(self.driver.getPositionFromBoard(ci.driver, ci.params[0]))
             elif ci.command == 'ENC':
