@@ -24,8 +24,6 @@ class CurveItem:
         #self.curve has to be a PlotDataItem,
         #self.curve = plotAxis.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
 
-    def renewCurve(self, plotAxis):
-        self.curve = plotAxis.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': self.col, 'width': self.width, 'style': self.style})
 
     def getText(self):
         return '%s:%s:%s'%(self.driver, self.signal, self.plotAxisNb)
@@ -72,6 +70,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.gridLayout.addWidget(self.pw)
 
         self.last_now = None
+        self.clear = False
 
         self.axes = []
         self.axes.append(self.pw.getPlotItem())
@@ -208,6 +207,7 @@ class DialogCurves(QtGui.QDialog):
         ## (probably this should be handled in ViewBox.resizeEvent)
         self.axes[1].linkedViewChanged(self.axes[0].vb, self.axes[1].XAxis)
         self.axes[2].linkedViewChanged(self.axes[0].vb, self.axes[2].XAxis)
+        self.updatePlotAxesLabels()
 
 
     def updatePlotAxesLabels(self):
@@ -215,14 +215,14 @@ class DialogCurves(QtGui.QDialog):
         for ci in self.curveItems:
             #txt1 = txt1 + "<span style='font-size: 7pt; color: %s;'>%s </span>"%(self.curveItems[i].col.name(), self.curveItems[i].getText())
             txt[ci.plotAxisNb - 1] += "<span style='font-size: 8pt; color: %s;'>%s</span>"%(ci.col.name(), ci.getText())
-        print txt
+        #print txt
         self.axes[0].getAxis('left').setLabel(txt[0])
         self.axes[0].getAxis('right').setLabel(txt[1])
         self.ax3.setLabel(txt[2])
 
     def addButtonClicked(self):
-        cb = self.ui.cbSignals
-        color = cb.palette().color(cb.palette().Active, cb.palette().WindowText)
+        #cb = self.ui.cbSignals
+        #color = cb.palette().color(cb.palette().Active, cb.palette().WindowText)
         ci = CurveItem(self.pw,
                        source='',
                        col=self.colors[self.ui.cbSignals.currentIndex()],
@@ -236,10 +236,11 @@ class DialogCurves(QtGui.QDialog):
                        )
         self.getCurve(ci)
         self.curveItems.append(ci)
-        ci.arrayTime = [time.time() - self.refTime]
-        ci.arrayVal = [1]
-        ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
-        #self.ui.cbCurves.addItem(ci.getText())
+        #ci.arrayTime = [time.time() - self.refTime]
+        #ci.arrayVal = [1]
+        ci.arrayTime = []
+        ci.arrayVal = []
+        #ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
         self.ui.listCurves.addItem(ci.getText())
         self.ui.listCurves.setCurrentRow(len(self.curveItems) - 1)
         self.ui.listCurves.item(len(self.curveItems) - 1).setForeground(ci.col)
@@ -248,23 +249,23 @@ class DialogCurves(QtGui.QDialog):
         #self.ui.listCurves.setCurrentItem(ci.getText())
         self.updatePlotAxesLabels()
 
-    def addSignal(self, signalNb, plotAxisNb):
+    def addSignal(self, driverNb, signalNb, plotAxisNb):
         ci = CurveItem(self.pw,
                        source='',
                        col=self.colors[signalNb],
                        width=self.penWidths[signalNb],
                        style=self.penStyles[signalNb],
                        signal=self.signals[signalNb],
-                       driver=self.icepapAddress,
+                       driver=driverNb,#self.icepapAddress,
                        plotAxisNb=plotAxisNb,
                        #plotAxis = self.axes[self.ui.cbPlotAxis.currentIndex()]
                        #curve=self.get
                        )
         self.getCurve(ci)
         self.curveItems.append(ci)
-        ci.arrayTime = [time.time() - self.refTime]
-        ci.arrayVal = [1]
-        ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
+        ci.arrayTime = []
+        ci.arrayVal = []
+        #ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
         #self.ui.cbCurves.addItem(ci.getText())
         self.ui.listCurves.addItem(ci.getText())
         self.ui.listCurves.setCurrentRow(len(self.curveItems) - 1)
@@ -273,10 +274,7 @@ class DialogCurves(QtGui.QDialog):
         self.updatePlotAxesLabels()
 
     def clearData(self):
-        for ci in self.curveItems:
-            self.arrayTime = []
-            self.arrayData = []
-        self.refTime = time.time()
+        self.clear = True 
 
     def shiftButtonClicked(self):
         #ci = self.curveItems[self.ui.cbCurves.currentIndex()]
@@ -288,7 +286,6 @@ class DialogCurves(QtGui.QDialog):
         ci.plotAxisNb = ci.plotAxisNb%self.maxPlotAxes + 1
         #ci.plotAxis = self.axes[ci.plotAxisNb]
         self.getCurve(ci)
-        #ci.renewCurve(self.axes[ci.plotAxisNb-1])
 
         #self.ui.cbCurves.setItemText(index, ci.getText())
         self.ui.listCurves.takeItem(index)
@@ -299,9 +296,9 @@ class DialogCurves(QtGui.QDialog):
         self.updatePlotAxesLabels()
 
     def getCurve(self, ci):
-        if ci.plotAxisNb == 1:
+        if ci.plotAxisNb == 1:#PlotItem.plot and addItem(PlotDataItem)
             ci.curve = self.axes[0].plot(x=ci.arrayTime, y=ci.arrayVal, pen={'color': ci.col, 'width': ci.width, 'style' : ci.style})
-        else:
+        else:#PlotItem.getViewBox().addItem(PlotCurveItem) a PlotDataItem has inside a PlotCurveItem
             ci.curve = pg.PlotCurveItem(x=ci.arrayTime, y=ci.arrayVal, pen={'color': ci.col, 'width': ci.width, 'style' : ci.style})
             self.axes[ci.plotAxisNb - 1].addItem(ci.curve)
 
@@ -314,6 +311,26 @@ class DialogCurves(QtGui.QDialog):
         #self.ui.cbCurves.removeItem(self.ui.cbCurves.currentIndex())
         self.ui.listCurves.takeItem(n)
         self.updatePlotAxesLabels()
+        #self.resetPlotAxes()
+
+    def resetPlotAxes(self):
+        for ax in range(0, len(self.axes)):
+            empty = True
+            for ci in self.curveItems:
+                if ci.plotAxisNb == ax + 1:
+                    empty = False
+            if empty:
+                print "axis empty:", ax
+                if ax == 0:
+                    self.axes[0].vb.disableAutoRange(axis=self.axes[0].vb.YAxis)
+                else:
+                    self.axes[ax].disableAutoRange(axis=self.axes[ax].YAxis)
+            else:
+                if ax == 0:
+                    self.axes[0].vb.enableAutoRange(axis=self.axes[0].vb.YAxis)
+                else:
+                    self.axes[ax].enableAutoRange(axis=self.axes[ax].YAxis)
+                
 
     def mouseMoved(self, evt):
         pos = evt[0]  ## using signal proxy turns original arguments into a tuple
@@ -382,25 +399,28 @@ class DialogCurves(QtGui.QDialog):
             print('Failed to create curve for ' + ci.signal + '!')
 
     def removeCurve(self, ci):
-        self.vb.removeItem(ci.curve)
+        if ci.plotAxisNb-1 == 0:
+            self.vb.removeItem(ci.curve)
+        else:
+            self.axes[ci.plotAxisNb-1].removeItem(ci.curve)
 
     def prepareCloop(self):
         for i in range(0, self.ui.listCurves.count()):
-            self.removeCurve(i)
-        self.addSignal(0, 1)# signalNb, plotAxisNb)
-        self.addSignal(9, 2)
-        self.addSignal(10, 2)
-        self.addSignal(16, 3)
-        self.addSignal(18, 3)
-        self.addSignal(19, 3)
-        self.addSignal(20, 3)
+            self.removeCurve(self.curveItems[i])
+        self.addSignal(self.icepapAddress, 0, 1)# signalNb, plotAxisNb)
+        self.addSignal(self.icepapAddress, 9, 2)
+        self.addSignal(self.icepapAddress, 10, 2)
+        self.addSignal(self.icepapAddress, 16, 3)
+        self.addSignal(self.icepapAddress, 18, 3)
+        self.addSignal(self.icepapAddress, 19, 3)
+        self.addSignal(self.icepapAddress, 20, 3)
 
     def prepareCurrents(self):
         for i in range(0, self.ui.listCurves.count()):
             self.removeCurve(i)
-        self.addSignal(0, 1)# signalNb, plotAxisNb)
-        self.addSignal(25, 2)
-        self.addSignal(28, 3)
+        self.addSignal(self.icepapAddress, 0, 1)# signalNb, plotAxisNb)
+        self.addSignal(self.icepapAddress, 25, 2)
+        self.addSignal(self.icepapAddress, 28, 3)
 
     def pauseButtonClicked(self):
         if self.ticker.isActive():
@@ -411,6 +431,12 @@ class DialogCurves(QtGui.QDialog):
             self.ui.btnPause.setText('Pause')
 
     def tick(self):
+        if self.clear:
+            for ci in self.curveItems:
+                ci.arrayTime = []
+                ci.arrayVal = []
+                #self.getCurve(ci)
+            self.refTime = time.time()
         now = time.time() - self.refTime
         #print now
         #print "range:", self.pw.viewRange()
@@ -434,6 +460,9 @@ class DialogCurves(QtGui.QDialog):
                 #    ci.arrayTime = ci.arrayTime[-(100 * displayedDataPoints):]
                 #    ci.arrayVal = ci.arrayVal[-(100 * displayedDataPoints):]
                 #ci.curve.setData(x=ci.arrayTime[-(100 * displayedDataPoints):], y=ci.arrayVal[-(100 * displayedDataPoints):])
+                if self.clear:
+                    #self.getCurve(ci)
+                    self.clear = False
                 ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
             else:
                 print('Failed to update curve for ' + ci.source + '!')
