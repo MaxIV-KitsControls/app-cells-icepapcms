@@ -1635,15 +1635,18 @@ class PageiPapDriver(QtGui.QWidget):
 
     def cbHomeSrch2Changed(self):
         if self.ui.cbHomeSrch1.currentText() == 'SRCH':
-            disable = self.ui.cbHomeSrch2.currentText() in ['Lim-', 'Lim+']
+            #disable = self.ui.cbHomeSrch2.currentText() in ['Lim-', 'Lim+']
+            disable = False
             self.ui.cbHomeSrch3.setDisabled(disable)
             self.ui.cbHomeSrch4.setDisabled(disable)
 
     def doHomeSrch(self):
         a = self.icepap_driver.addr
         command = str(a) + ':' + self.ui.cbHomeSrch1.currentText() + ' ' + self.ui.cbHomeSrch2.currentText()
-        if (self.ui.cbHomeSrch1.currentText() == 'SRCH') and (self.ui.cbHomeSrch2.currentText() not in ['Lim-', 'Lim+']):
+        #if (self.ui.cbHomeSrch1.currentText() == 'SRCH') and (self.ui.cbHomeSrch2.currentText() not in ['Lim-', 'Lim+']):
+        if (self.ui.cbHomeSrch1.currentText() == 'SRCH'):
             command.append(' ' + self.ui.cbHomeSrch3.currentText() + ' ' + self.ui.cbHomeSrch4.currentText())
+        print str(command)
         IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteCommand(str(command))
 
     def doHomeStat(self):

@@ -12,6 +12,8 @@ class CurveItem:
         self.source = source
         self.arrayTime = []
         self.arrayVal = []
+        self.arrayValMax = 0
+        self.arrayValMin = 0
         self.signal = signal
         self.driver = driver
         self.plotAxisNb = plotAxisNb
@@ -34,7 +36,7 @@ class CurveItem:
             self.params = [self.signal.replace('Pos', '')]
         elif self.signal.startswith('Enc'):
             self.command = 'ENC'
-            self.params = [self.signal.replace('Enc', '')]
+            self.params = [self.signal.replace('Enc', '',1)]
         elif self.signal.startswith('Dif'):
             self.command = 'POS'
             self.params = ['Axis', self.signal.replace('DifAx', '')]
@@ -160,7 +162,7 @@ class DialogCurves(QtGui.QDialog):
         for i in range(1, self.maxPlotAxes +1):
             self.ui.cbPlotAxis.addItem(str(i))
 
-
+        self.ui.cbDriver.setCurrentIndex(self.icepapAddress-1)
         self.connectSignals()
         self.ticker.start(self.tickInterval)
 
@@ -345,6 +347,8 @@ class DialogCurves(QtGui.QDialog):
             txt = txt + "%0.2f"%(index)
             txt = txt + "</span>"
             txt1 = ''
+            txtmax = ''
+            txtmin = ''
             for i in range(0, len(self.curveItems)):
                 if index > self.curveItems[i].arrayTime[0] and index < self.curveItems[i].arrayTime[-1]:
                     aTimeIndex = self.findIndexInTimes(self.curveItems[i].arrayTime, index)
@@ -357,8 +361,16 @@ class DialogCurves(QtGui.QDialog):
                     if i%4 == 3:
                         #txt1 = txt1 + "<br>"
                         txt = txt + "<br>"
+                    txtmax = txtmax + "<span style='font-size: 8pt; color: %s; font-weight: bold'>"%(self.curveItems[i].col.name())
+                    txtmax = txtmax + ' | '
+                    txtmax = txtmax + ' ' + str(self.curveItems[i].arrayValMax)
+                    txtmax = txtmax + "</span>"
+                    txtmin = txtmin + "<span style='font-size: 8pt; color: %s; font-weight: bold'>"%(self.curveItems[i].col.name())
+                    txtmin = txtmin + ' | '
+                    txtmin = txtmin + ' ' + str(self.curveItems[i].arrayValMin)
+                    txtmin = txtmin + "</span>"
             #self.pw.setTitle("%s<br>%s" % (txt1,txt))
-            self.pw.setTitle("%s" % (txt))
+            self.pw.setTitle("%s<br>%s<br>%s" % (txt,txtmax, txtmin))
             self.vLine.setPos(mousePoint.x())
             #self.hLine.setPos(mousePoint.y())
 
@@ -379,6 +391,47 @@ class DialogCurves(QtGui.QDialog):
             elif ci.command == 'POS':
                 val = float(self.driver.getPositionFromBoard(ci.driver, ci.params[0]))
             elif ci.command == 'ENC':
+                print ci.command, ci.params
+                val = float(self.driver.getEncoder(ci.driver, ci.params[0]))
+            elif ci.params[0] in ['Moving', 'Settling', 'Outofwin', 'Ready', 'Stopcode']:
+                val = float(self.driver.getDecodedStatus(ci.driver).get(str(ci.params[0].lower()))[0])
+            elif ci.command == 'MEAS':
+                val = float(self.driver.getMeas(ci.driver, ci.params[0]))
+        except Exception, e:
+            ok = False
+            print(e)
+        return ok, val
+
+    def addedCurve(self, ci):
+        (ok, val) = self.getValue(ci)
+        if ok:
+            ci.arrayTime = [time.time() - self.refTime]
+            ci.arrayVal = [val]
+            ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
+        else:
+            #self.pw.setTitle("%s<br>%s" % (txt1,txt))
+            self.pw.setTitle("%s<br>%s<br>%s" % (txt, txtmax, txtmin))
+            self.vLine.setPos(mousePoint.x())
+            #self.hLine.setPos(mousePoint.y())
+
+    def findIndexInTimes(self, aList, value):
+        for i in range(0, len(aList)):
+            if aList[i] > value:
+                return i
+        return -1
+
+
+    def getValue(self, ci):
+        #f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
+        ok = True
+        val = 0.0
+        try:
+            if ci.signal.startswith('Dif'):
+                val = float(self.driver.getPositionFromBoard(ci.driver, 'AXIS')) - float(self.driver.getPositionFromBoard(ci.driver, ci.params[1]))
+            elif ci.command == 'POS':
+                val = float(self.driver.getPositionFromBoard(ci.driver, ci.params[0]))
+            elif ci.command == 'ENC':
+                print ci.command, ci.params
                 val = float(self.driver.getEncoder(ci.driver, ci.params[0]))
             elif ci.params[0] in ['Moving', 'Settling', 'Outofwin', 'Ready', 'Stopcode']:
                 val = float(self.driver.getDecodedStatus(ci.driver).get(str(ci.params[0].lower()))[0])
@@ -429,6 +482,7 @@ class DialogCurves(QtGui.QDialog):
         else:
             self.ticker.start(self.tickInterval)
             self.ui.btnPause.setText('Pause')
+        self.resetPlotAxes()
 
     def tick(self):
         if self.clear:
@@ -455,6 +509,8 @@ class DialogCurves(QtGui.QDialog):
             if ok:
                 ci.arrayTime.append(now)
                 ci.arrayVal.append(val)
+                ci.arrayValMax = max(ci.arrayVal)
+                ci.arrayValMin = min(ci.arrayVal)
                 displayedDataPoints = self.xTimeLength * 1000 / self.tickInterval
                 #if len(ci.arrayTime) > 1000 * displayedDataPoints: #this should be 100*
                 #    ci.arrayTime = ci.arrayTime[-(100 * displayedDataPoints):]
