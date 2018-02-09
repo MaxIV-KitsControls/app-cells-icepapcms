@@ -1652,9 +1652,9 @@ class PageiPapDriver(QtGui.QWidget):
             self.ui.cbHomeSrch3.setDisabled(disable)
             self.ui.cbHomeSrch4.setDisabled(disable)
             if self.ui.cbHomeSrch2.currentText() == 'Lim-':
-                self.ui.cbHomeSrch4.setCurrentIndex(0)
-            elif self.ui.cbHomeSrch2.currentText() == 'Lim+':
                 self.ui.cbHomeSrch4.setCurrentIndex(1)
+            elif self.ui.cbHomeSrch2.currentText() == 'Lim+':
+                self.ui.cbHomeSrch4.setCurrentIndex(0)
 
 
     def doHomeSrch(self):
