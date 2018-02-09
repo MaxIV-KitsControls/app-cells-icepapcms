@@ -1609,14 +1609,26 @@ class PageiPapDriver(QtGui.QWidget):
             self.ui.LedLimitPos.off()
 
         # read position and encoder
-
         self.ui.LCDPosition.display(position[0])
         self.ui.LCDPositionTest.display(position[0])
         self.ui.LCDEncoder.display(position[1])
 
+        # update Position and Encoder calcs
+        self.calculatePositionAndEncoderUnits(position[0], position[1])
+
     def enableEctsPerTurnCalculation(self):
         self.ecpmt_just_enabled = True
         #print "ecpt " + str(self.ecpmt_just_enabled)
+
+    def calculatePositionAndEncoderUnits(self, pos, enc):
+        if self.ui.txtSpu.text() in ['', None]:
+            self.ui.txtSpu.setText('1')
+        if self.ui.txtEpu.text() in ['', None]:
+            self.ui.txtEpu.setText('1')
+        if self.ui.txtOffset.text() in ['', None]:
+            self.ui.txtOffset.setText('0')
+        self.ui.txtPosition.setText(str(float(self.ui.txtOffset.text()) + float(pos)/float(self.ui.txtSpu.text())))
+        self.ui.txtEncoder.setText(str(float(self.ui.txtOffset.text()) + float(enc)/float(self.ui.txtEpu.text())))
 
     def addDialogCurves(self):
         DialogCurves(self, self.icepap_driver)
@@ -1639,6 +1651,11 @@ class PageiPapDriver(QtGui.QWidget):
             disable = False
             self.ui.cbHomeSrch3.setDisabled(disable)
             self.ui.cbHomeSrch4.setDisabled(disable)
+            if self.ui.cbHomeSrch2.currentText() == 'Lim-':
+                self.ui.cbHomeSrch4.setCurrentIndex(0)
+            elif self.ui.cbHomeSrch2.currentText() == 'Lim+':
+                self.ui.cbHomeSrch4.setCurrentIndex(1)
+
 
     def doHomeSrch(self):
         a = self.icepap_driver.addr

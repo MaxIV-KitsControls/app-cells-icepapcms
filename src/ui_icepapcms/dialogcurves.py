@@ -107,7 +107,7 @@ class DialogCurves(QtGui.QDialog):
 
         self.signals = ['PosAxis', 'PosTgtenc', 'PosShftenc',
                       'PosEncin', 'PosAbsenc', 'PosInpos',
-                      'PosMotor', 'PosMeas', 'PosCtrlenc',
+                      'PosMotor', 'PosMeas', 'PosCtrlenc', 'PosMeasure',
                       'DifAxMotor', 'DifAxTgtenc', 'DifAxShftenc',
                       'DifAxCtrlenc',
                       'EncEncin', 'EncAbsenc', 'EncInpos',
@@ -119,7 +119,7 @@ class DialogCurves(QtGui.QDialog):
                       ]
         self.colors = [QtGui.QColor(255, 255, 0), QtGui.QColor(255, 0, 0), QtGui.QColor(0, 255, 0),
             QtGui.QColor(255, 255, 255), QtGui.QColor(51, 153, 255), QtGui.QColor(0, 255, 255),
-            QtGui.QColor(255, 0, 255), QtGui.QColor(255, 153, 204), QtGui.QColor(204, 153, 102),
+            QtGui.QColor(255, 0, 255), QtGui.QColor(255, 153, 204), QtGui.QColor(204, 153, 102), QtGui.QColor(0, 0, 255),
             QtGui.QColor(255, 204, 0), QtGui.QColor(153, 255, 153), QtGui.QColor(255, 170, 0),
             QtGui.QColor(255, 0, 0),
             QtGui.QColor(0, 255, 255), QtGui.QColor(255, 170, 255), QtGui.QColor(255, 255, 127),
@@ -131,7 +131,7 @@ class DialogCurves(QtGui.QDialog):
             ]
         self.penWidths = [1, 1, 1,
                       1, 1, 1,
-                      1, 1, 1,
+                      1, 1, 1, 1,
                       1, 3, 2,
                       3,
                       1, 1, 1,
@@ -142,7 +142,7 @@ class DialogCurves(QtGui.QDialog):
                       1]
         self.penStyles = [QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
                           QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
-                          QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
+                          QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
                           QtCore.Qt.SolidLine, QtCore.Qt.DotLine, QtCore.Qt.DashLine,
                           QtCore.Qt.DashLine,
                           QtCore.Qt.DotLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine,
@@ -193,6 +193,7 @@ class DialogCurves(QtGui.QDialog):
         self.ui.btnCLoop.clicked.connect(self.prepareCloop)
         self.ui.btnCurrents.clicked.connect(self.prepareCurrents)
         self.ui.btnClear.clicked.connect(self.clearData)
+        self.ui.btnAutoRange.clicked.connect(self.autoRangeYs)
 
         self.proxy = pg.SignalProxy(self.pw.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
 
@@ -276,7 +277,7 @@ class DialogCurves(QtGui.QDialog):
         self.updatePlotAxesLabels()
 
     def clearData(self):
-        self.clear = True 
+        self.clear = True
 
     def shiftButtonClicked(self):
         #ci = self.curveItems[self.ui.cbCurves.currentIndex()]
@@ -332,7 +333,7 @@ class DialogCurves(QtGui.QDialog):
                     self.axes[0].vb.enableAutoRange(axis=self.axes[0].vb.YAxis)
                 else:
                     self.axes[ax].enableAutoRange(axis=self.axes[ax].YAxis)
-                
+
 
     def mouseMoved(self, evt):
         pos = evt[0]  ## using signal proxy turns original arguments into a tuple
@@ -343,7 +344,7 @@ class DialogCurves(QtGui.QDialog):
             xMaxViewed = viewRange[0][1]
             xMinViewed = viewRange[0][0]
             #print "index, xmaxv, xminv ", index, xMaxViewed, xMinViewed
-            txt = "<span style='font-size: 10pt; color: white; font-weight: bold'>"
+            txt = "<span style='font-size: 8pt; color: white;'>"
             txt = txt + "%0.2f"%(index)
             txt = txt + "</span>"
             txt1 = ''
@@ -352,25 +353,25 @@ class DialogCurves(QtGui.QDialog):
             for i in range(0, len(self.curveItems)):
                 if index > self.curveItems[i].arrayTime[0] and index < self.curveItems[i].arrayTime[-1]:
                     aTimeIndex = self.findIndexInTimes(self.curveItems[i].arrayTime, index)
-                    txt = txt + "<span style='font-size: 8pt; color: %s; font-weight: bold'>"%(self.curveItems[i].col.name())
-                    txt = txt + ' | '
+                    txt = txt + "<span style='font-size: 8pt; color: %s;'>"%(self.curveItems[i].col.name())
+                    txt = txt + '|'
                     #txt = txt + ' ' + "%0.2f"%(self.curveItems[i].arrayTime[aTimeIndex])
-                    txt = txt + ' ' + str(self.curveItems[i].arrayVal[aTimeIndex])
+                    txt = txt + '' + str(self.curveItems[i].arrayVal[aTimeIndex])
                     txt = txt + "</span>"
                     #txt1 = txt1 + "<span style='font-size: 7pt; color: %s;'>%s </span>"%(self.curveItems[i].col.name(), self.curveItems[i].getText())
-                    if i%4 == 3:
-                        #txt1 = txt1 + "<br>"
-                        txt = txt + "<br>"
-                    txtmax = txtmax + "<span style='font-size: 8pt; color: %s; font-weight: bold'>"%(self.curveItems[i].col.name())
-                    txtmax = txtmax + ' | '
-                    txtmax = txtmax + ' ' + str(self.curveItems[i].arrayValMax)
+                    #if i%4 == 3:
+                    #    #txt1 = txt1 + "<br>"
+                    #    txt = txt + "<br>"
+                    txtmax = txtmax + "<span style='font-size: 8pt; color: %s;'>"%(self.curveItems[i].col.name())
+                    txtmax = txtmax + '|'
+                    txtmax = txtmax + '' + str(self.curveItems[i].arrayValMax)
                     txtmax = txtmax + "</span>"
-                    txtmin = txtmin + "<span style='font-size: 8pt; color: %s; font-weight: bold'>"%(self.curveItems[i].col.name())
-                    txtmin = txtmin + ' | '
-                    txtmin = txtmin + ' ' + str(self.curveItems[i].arrayValMin)
+                    txtmin = txtmin + "<span style='font-size: 8pt; color: %s;'>"%(self.curveItems[i].col.name())
+                    txtmin = txtmin + '|'
+                    txtmin = txtmin + '' + str(self.curveItems[i].arrayValMin)
                     txtmin = txtmin + "</span>"
             #self.pw.setTitle("%s<br>%s" % (txt1,txt))
-            self.pw.setTitle("%s<br>%s<br>%s" % (txt,txtmax, txtmin))
+            self.pw.setTitle("%s<br>%s<br>%s" % (txtmin, txt, txtmax))
             self.vLine.setPos(mousePoint.x())
             #self.hLine.setPos(mousePoint.y())
 
@@ -458,22 +459,23 @@ class DialogCurves(QtGui.QDialog):
             self.axes[ci.plotAxisNb-1].removeItem(ci.curve)
 
     def prepareCloop(self):
+        #if someone touches the list of signals or its order, this will be altered
         for i in range(0, self.ui.listCurves.count()):
             self.removeCurve(self.curveItems[i])
         self.addSignal(self.icepapAddress, 0, 1)# signalNb, plotAxisNb)
-        self.addSignal(self.icepapAddress, 9, 2)
         self.addSignal(self.icepapAddress, 10, 2)
-        self.addSignal(self.icepapAddress, 16, 3)
-        self.addSignal(self.icepapAddress, 18, 3)
+        self.addSignal(self.icepapAddress, 11, 2)
+        self.addSignal(self.icepapAddress, 17, 3)
         self.addSignal(self.icepapAddress, 19, 3)
         self.addSignal(self.icepapAddress, 20, 3)
+        #self.addSignal(self.icepapAddress, 21, 3)
 
     def prepareCurrents(self):
         for i in range(0, self.ui.listCurves.count()):
             self.removeCurve(i)
         self.addSignal(self.icepapAddress, 0, 1)# signalNb, plotAxisNb)
-        self.addSignal(self.icepapAddress, 25, 2)
-        self.addSignal(self.icepapAddress, 28, 3)
+        self.addSignal(self.icepapAddress, 26, 2)
+        self.addSignal(self.icepapAddress, 27, 3)
 
     def pauseButtonClicked(self):
         if self.ticker.isActive():
@@ -482,6 +484,8 @@ class DialogCurves(QtGui.QDialog):
         else:
             self.ticker.start(self.tickInterval)
             self.ui.btnPause.setText('Pause')
+
+    def autoRangeYs(self):
         self.resetPlotAxes()
 
     def tick(self):

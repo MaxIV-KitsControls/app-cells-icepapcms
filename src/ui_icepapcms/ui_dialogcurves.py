@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Tue Jan 30 13:34:01 2018
+# Created: Fri Feb  9 13:20:40 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -74,6 +74,9 @@ class Ui_DialogCurves(object):
         self.btnClear = QtGui.QPushButton(DialogCurves)
         self.btnClear.setObjectName(_fromUtf8("btnClear"))
         self.verticalLayout_2.addWidget(self.btnClear)
+        self.btnAutoRange = QtGui.QPushButton(DialogCurves)
+        self.btnAutoRange.setObjectName(_fromUtf8("btnAutoRange"))
+        self.verticalLayout_2.addWidget(self.btnAutoRange)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem)
         self.gridLayout_2.addLayout(self.verticalLayout_2, 0, 2, 1, 1)
@@ -93,4 +96,5 @@ class Ui_DialogCurves(object):
         self.btnCurrents.setText(_translate("DialogCurves", "Currents", None))
         self.btnPause.setText(_translate("DialogCurves", "Pause", None))
         self.btnClear.setText(_translate("DialogCurves", "Clear", None))
+        self.btnAutoRange.setText(_translate("DialogCurves", "Autorange Ys", None))
 
