@@ -20,8 +20,9 @@ class CurveItem:
         self.style = style
         self.col = col
         self.width = width
+        self.measureResolution = 1
         self.getCommand()
-        print self.command, self.params
+        #print self.command, self.params
         #self.curve = widget.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
         #self.curve has to be a PlotDataItem,
         #self.curve = plotAxis.plot(x=self.arrayTime, y=self.arrayVal, pen={'color': col, 'width': width})
@@ -48,6 +49,8 @@ class CurveItem:
             self.params = [self.signal.replace('Stat', '')]
         #print self.command
         #print self.params
+
+            
 
 
 class DialogCurves(QtGui.QDialog):
@@ -108,6 +111,7 @@ class DialogCurves(QtGui.QDialog):
         self.signals = ['PosAxis', 'PosTgtenc', 'PosShftenc',
                       'PosEncin', 'PosAbsenc', 'PosInpos',
                       'PosMotor', 'PosMeas', 'PosCtrlenc', 'PosMeasure',
+                      'DifAxMeasure', 
                       'DifAxMotor', 'DifAxTgtenc', 'DifAxShftenc',
                       'DifAxCtrlenc',
                       'EncEncin', 'EncAbsenc', 'EncInpos',
@@ -120,6 +124,7 @@ class DialogCurves(QtGui.QDialog):
         self.colors = [QtGui.QColor(255, 255, 0), QtGui.QColor(255, 0, 0), QtGui.QColor(0, 255, 0),
             QtGui.QColor(255, 255, 255), QtGui.QColor(51, 153, 255), QtGui.QColor(0, 255, 255),
             QtGui.QColor(255, 0, 255), QtGui.QColor(255, 153, 204), QtGui.QColor(204, 153, 102), QtGui.QColor(0, 0, 255),
+            QtGui.QColor(0, 255, 0),
             QtGui.QColor(255, 204, 0), QtGui.QColor(153, 255, 153), QtGui.QColor(255, 170, 0),
             QtGui.QColor(255, 0, 0),
             QtGui.QColor(0, 255, 255), QtGui.QColor(255, 170, 255), QtGui.QColor(255, 255, 127),
@@ -132,6 +137,7 @@ class DialogCurves(QtGui.QDialog):
         self.penWidths = [1, 1, 1,
                       1, 1, 1,
                       1, 1, 1, 1,
+                      1,
                       1, 3, 2,
                       3,
                       1, 1, 1,
@@ -143,6 +149,7 @@ class DialogCurves(QtGui.QDialog):
         self.penStyles = [QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
                           QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
                           QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine, QtCore.Qt.SolidLine,
+                          QtCore.Qt.SolidLine,
                           QtCore.Qt.SolidLine, QtCore.Qt.DotLine, QtCore.Qt.DashLine,
                           QtCore.Qt.DashLine,
                           QtCore.Qt.DotLine, QtCore.Qt.DashLine, QtCore.Qt.DashLine,
@@ -264,6 +271,7 @@ class DialogCurves(QtGui.QDialog):
                        #plotAxis = self.axes[self.ui.cbPlotAxis.currentIndex()]
                        #curve=self.get
                        )
+        self.getSignalResolution(ci)
         self.getCurve(ci)
         self.curveItems.append(ci)
         ci.arrayTime = []
@@ -275,6 +283,30 @@ class DialogCurves(QtGui.QDialog):
         self.ui.listCurves.item(len(self.curveItems) - 1).setForeground(ci.col)
         self.ui.listCurves.item(len(self.curveItems) - 1).setBackground(QtGui.QColor(0,0,0))
         self.updatePlotAxesLabels()
+
+    def getSignalResolution(self, ci):
+        #print ci.command
+        if 'Measure' in ci.params:
+            tgtenc = self.driver.getCfgParameter(ci.driver, 'TGTENC').upper()
+            shftenc = self.driver.getCfgParameter(ci.driver, 'SHFTENC').upper()
+            axisnstep = self.driver.getCfgParameter(ci.driver, 'ANSTEP')
+            axisnturn = self.driver.getCfgParameter(ci.driver, 'ANTURN')
+            #print tgtenc, shftenc, axisnstep, axisnturn
+            nstep = axisnstep
+            nturn = axisnturn
+            if tgtenc == 'ABSENC' or (tgtenc == 'NONE' and shftenc == 'ABSENC'):
+                nstep = self.driver.getCfgParameter(ci.driver, 'ABSNSTEP')
+                nturn = self.driver.getCfgParameter(ci.driver, 'ABSNTURN')
+            elif tgtenc == 'ENCIN' or (tgtenc == 'NONE' and shftenc == 'ENCIN'):
+                nstep = self.driver.getCfgParameter(ci.driver, 'EINNSTEP')
+                nturn = self.driver.getCfgParameter(ci.driver, 'EINNTURN')
+            elif tgtenc == 'INPOS' or (tgtenc == 'NONE' and shftenc == 'INPOS'):
+                nstep = self.driver.getCfgParameter(ci.driver, 'INPNSTEP')
+                nturn = self.driver.getCfgParameter(ci.driver, 'INPNTURN')
+            #print nstep, nturn
+            ci.measureResolution = (float(nstep)/float(nturn))/(float(axisnstep)/float(axisnturn)) 
+            #print ci.measureResolution
+
 
     def clearData(self):
         self.clear = True
@@ -386,9 +418,16 @@ class DialogCurves(QtGui.QDialog):
         #f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
         ok = True
         val = 0.0
+        #print ci.signal, ci.driver, ci.params
         try:
-            if ci.signal.startswith('Dif'):
-                val = float(self.driver.getPositionFromBoard(ci.driver, 'AXIS')) - float(self.driver.getPositionFromBoard(ci.driver, ci.params[1]))
+            if ci.signal.startswith('DifAxMeasure'):
+                val = float(self.driver.getPosition(ci.driver)) - float(self.getMeasure(ci.driver))/ci.measureResolution
+            elif ci.signal.startswith('Dif'):
+                val = float(self.driver.getPosition(ci.driver)) - float(self.driver.getPositionFromBoard(ci.driver, ci.params[1]))
+            elif ci.command == 'POS' and ci.params[0] == 'Axis':
+                val = float(self.driver.getPosition(ci.driver))
+            elif ci.command == 'POS' and ci.params[0] == 'Measure':
+                val = float(self.getMeasure(ci.driver))
             elif ci.command == 'POS':
                 val = float(self.driver.getPositionFromBoard(ci.driver, ci.params[0]))
             elif ci.command == 'ENC':
@@ -402,6 +441,16 @@ class DialogCurves(QtGui.QDialog):
             ok = False
             print(e)
         return ok, val
+
+    def getMeasure(self, addr):
+        command = "?_FPOS MEASURE %d"%addr
+        ans = self.driver.sendWriteReadCommand(command)
+        if not 'ERROR' in ans:
+            return self.driver.parseResponse('_?FPOS', ans)
+        # OLD MCPUs do not support ?_FPOS
+        command = "?FPOS MEASURE %d"%addr
+        ans = self.driver.sendWriteReadCommand(command)
+        return self.driver.parseResponse('?FPOS', ans)
 
     def addedCurve(self, ci):
         (ok, val) = self.getValue(ci)
@@ -411,8 +460,9 @@ class DialogCurves(QtGui.QDialog):
             ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
         else:
             #self.pw.setTitle("%s<br>%s" % (txt1,txt))
-            self.pw.setTitle("%s<br>%s<br>%s" % (txt, txtmax, txtmin))
-            self.vLine.setPos(mousePoint.x())
+            print('Failed to create curve for ' + ci.signal + '!')
+            #self.pw.setTitle("%s<br>%s<br>%s" % (txt, txtmax, txtmin))
+            #self.vLine.setPos(mousePoint.x())
             #self.hLine.setPos(mousePoint.y())
 
     def findIndexInTimes(self, aList, value):
@@ -420,37 +470,6 @@ class DialogCurves(QtGui.QDialog):
             if aList[i] > value:
                 return i
         return -1
-
-
-    def getValue(self, ci):
-        #f = self.driver.getPositionFromBoard if self.ui.radioButtonAxis.isChecked() else self.driver.getEncoder
-        ok = True
-        val = 0.0
-        try:
-            if ci.signal.startswith('Dif'):
-                val = float(self.driver.getPositionFromBoard(ci.driver, 'AXIS')) - float(self.driver.getPositionFromBoard(ci.driver, ci.params[1]))
-            elif ci.command == 'POS':
-                val = float(self.driver.getPositionFromBoard(ci.driver, ci.params[0]))
-            elif ci.command == 'ENC':
-                print ci.command, ci.params
-                val = float(self.driver.getEncoder(ci.driver, ci.params[0]))
-            elif ci.params[0] in ['Moving', 'Settling', 'Outofwin', 'Ready', 'Stopcode']:
-                val = float(self.driver.getDecodedStatus(ci.driver).get(str(ci.params[0].lower()))[0])
-            elif ci.command == 'MEAS':
-                val = float(self.driver.getMeas(ci.driver, ci.params[0]))
-        except Exception, e:
-            ok = False
-            print(e)
-        return ok, val
-
-    def addedCurve(self, ci):
-        (ok, val) = self.getValue(ci)
-        if ok:
-            ci.arrayTime = [time.time() - self.refTime]
-            ci.arrayVal = [val]
-            ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
-        else:
-            print('Failed to create curve for ' + ci.signal + '!')
 
     def removeCurve(self, ci):
         if ci.plotAxisNb-1 == 0:
@@ -465,17 +484,17 @@ class DialogCurves(QtGui.QDialog):
         self.addSignal(self.icepapAddress, 0, 1)# signalNb, plotAxisNb)
         self.addSignal(self.icepapAddress, 10, 2)
         self.addSignal(self.icepapAddress, 11, 2)
-        self.addSignal(self.icepapAddress, 17, 3)
-        self.addSignal(self.icepapAddress, 19, 3)
+        self.addSignal(self.icepapAddress, 18, 3)
         self.addSignal(self.icepapAddress, 20, 3)
+        self.addSignal(self.icepapAddress, 21, 3)
         #self.addSignal(self.icepapAddress, 21, 3)
 
     def prepareCurrents(self):
         for i in range(0, self.ui.listCurves.count()):
             self.removeCurve(i)
         self.addSignal(self.icepapAddress, 0, 1)# signalNb, plotAxisNb)
-        self.addSignal(self.icepapAddress, 26, 2)
-        self.addSignal(self.icepapAddress, 27, 3)
+        self.addSignal(self.icepapAddress, 27, 2)
+        self.addSignal(self.icepapAddress, 28, 3)
 
     def pauseButtonClicked(self):
         if self.ticker.isActive():
