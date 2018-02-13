@@ -1609,14 +1609,26 @@ class PageiPapDriver(QtGui.QWidget):
             self.ui.LedLimitPos.off()
 
         # read position and encoder
-
         self.ui.LCDPosition.display(position[0])
         self.ui.LCDPositionTest.display(position[0])
         self.ui.LCDEncoder.display(position[1])
 
+        # update Position and Encoder calcs
+        self.calculatePositionAndEncoderUnits(position[0], position[1])
+
     def enableEctsPerTurnCalculation(self):
         self.ecpmt_just_enabled = True
         #print "ecpt " + str(self.ecpmt_just_enabled)
+
+    def calculatePositionAndEncoderUnits(self, pos, enc):
+        if self.ui.txtSpu.text() in ['', None]:
+            self.ui.txtSpu.setText('1')
+        if self.ui.txtEpu.text() in ['', None]:
+            self.ui.txtEpu.setText('1')
+        if self.ui.txtOffset.text() in ['', None]:
+            self.ui.txtOffset.setText('0')
+        self.ui.txtPosition.setText(str(float(self.ui.txtOffset.text()) + float(pos)/float(self.ui.txtSpu.text())))
+        self.ui.txtEncoder.setText(str(float(self.ui.txtOffset.text()) + float(enc)/float(self.ui.txtEpu.text())))
 
     def addDialogCurves(self):
         DialogCurves(self, self.icepap_driver)
@@ -1635,15 +1647,23 @@ class PageiPapDriver(QtGui.QWidget):
 
     def cbHomeSrch2Changed(self):
         if self.ui.cbHomeSrch1.currentText() == 'SRCH':
-            disable = self.ui.cbHomeSrch2.currentText() in ['Lim-', 'Lim+']
+            #disable = self.ui.cbHomeSrch2.currentText() in ['Lim-', 'Lim+']
+            disable = False
             self.ui.cbHomeSrch3.setDisabled(disable)
             self.ui.cbHomeSrch4.setDisabled(disable)
+            if self.ui.cbHomeSrch2.currentText() == 'Lim-':
+                self.ui.cbHomeSrch4.setCurrentIndex(1)
+            elif self.ui.cbHomeSrch2.currentText() == 'Lim+':
+                self.ui.cbHomeSrch4.setCurrentIndex(0)
+
 
     def doHomeSrch(self):
         a = self.icepap_driver.addr
         command = str(a) + ':' + self.ui.cbHomeSrch1.currentText() + ' ' + self.ui.cbHomeSrch2.currentText()
-        if (self.ui.cbHomeSrch1.currentText() == 'SRCH') and (self.ui.cbHomeSrch2.currentText() not in ['Lim-', 'Lim+']):
+        #if (self.ui.cbHomeSrch1.currentText() == 'SRCH') and (self.ui.cbHomeSrch2.currentText() not in ['Lim-', 'Lim+']):
+        if (self.ui.cbHomeSrch1.currentText() == 'SRCH'):
             command.append(' ' + self.ui.cbHomeSrch3.currentText() + ' ' + self.ui.cbHomeSrch4.currentText())
+        print str(command)
         IcepapController().iPaps[self.icepap_driver.icepapsystem_name].sendWriteCommand(str(command))
 
     def doHomeStat(self):

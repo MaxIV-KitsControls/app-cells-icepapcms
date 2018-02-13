@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogstatusinfo.ui'
 #
-# Created: Wed Jan 24 10:23:38 2018
+# Created: Fri Feb  9 13:20:40 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -27,24 +27,37 @@ class Ui_DialogStatusInfo(object):
     def setupUi(self, DialogStatusInfo):
         DialogStatusInfo.setObjectName(_fromUtf8("DialogStatusInfo"))
         DialogStatusInfo.resize(428, 550)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(DialogStatusInfo.sizePolicy().hasHeightForWidth())
+        DialogStatusInfo.setSizePolicy(sizePolicy)
+        DialogStatusInfo.setMinimumSize(QtCore.QSize(50, 0))
+        self.verticalLayout_2 = QtGui.QVBoxLayout(DialogStatusInfo)
+        self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
+        self.verticalLayout = QtGui.QVBoxLayout()
+        self.verticalLayout.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
+        self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
         self.textBrowser = QtGui.QTextBrowser(DialogStatusInfo)
-        self.textBrowser.setGeometry(QtCore.QRect(10, 10, 411, 451))
         self.textBrowser.setObjectName(_fromUtf8("textBrowser"))
-        self.layoutWidget = QtGui.QWidget(DialogStatusInfo)
-        self.layoutWidget.setGeometry(QtCore.QRect(10, 510, 411, 34))
-        self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
-        self.horizontalLayout = QtGui.QHBoxLayout(self.layoutWidget)
-        self.horizontalLayout.setMargin(0)
+        self.verticalLayout.addWidget(self.textBrowser)
+        self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
-        self.btnUpdate = QtGui.QPushButton(self.layoutWidget)
+        self.btnUpdate = QtGui.QPushButton(DialogStatusInfo)
         self.btnUpdate.setObjectName(_fromUtf8("btnUpdate"))
         self.horizontalLayout.addWidget(self.btnUpdate)
-        self.btnEsync = QtGui.QPushButton(self.layoutWidget)
+        self.btnEsync = QtGui.QPushButton(DialogStatusInfo)
         self.btnEsync.setObjectName(_fromUtf8("btnEsync"))
         self.horizontalLayout.addWidget(self.btnEsync)
-        self.txt1Command = QtGui.QLineEdit(self.layoutWidget)
+        self.txt1Command = QtGui.QLineEdit(DialogStatusInfo)
         self.txt1Command.setObjectName(_fromUtf8("txt1Command"))
         self.horizontalLayout.addWidget(self.txt1Command)
+        self.cbAllDrivers = QtGui.QComboBox(DialogStatusInfo)
+        self.cbAllDrivers.setEditable(True)
+        self.cbAllDrivers.setObjectName(_fromUtf8("cbAllDrivers"))
+        self.horizontalLayout.addWidget(self.cbAllDrivers)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.verticalLayout_2.addLayout(self.verticalLayout)
 
         self.retranslateUi(DialogStatusInfo)
         QtCore.QMetaObject.connectSlotsByName(DialogStatusInfo)

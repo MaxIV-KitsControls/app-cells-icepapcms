@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialogcurves.ui'
 #
-# Created: Wed Jan 24 10:23:38 2018
+# Created: Fri Feb  9 13:20:40 2018
 #      by: PyQt4 UI code generator 4.10.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -37,6 +37,11 @@ class Ui_DialogCurves(object):
         self.verticalLayout_2 = QtGui.QVBoxLayout()
         self.verticalLayout_2.setObjectName(_fromUtf8("verticalLayout_2"))
         self.cbDriver = QtGui.QComboBox(DialogCurves)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.cbDriver.sizePolicy().hasHeightForWidth())
+        self.cbDriver.setSizePolicy(sizePolicy)
         self.cbDriver.setObjectName(_fromUtf8("cbDriver"))
         self.verticalLayout_2.addWidget(self.cbDriver)
         self.cbSignals = QtGui.QComboBox(DialogCurves)
@@ -60,13 +65,24 @@ class Ui_DialogCurves(object):
         self.btnCLoop = QtGui.QPushButton(DialogCurves)
         self.btnCLoop.setObjectName(_fromUtf8("btnCLoop"))
         self.verticalLayout_2.addWidget(self.btnCLoop)
+        self.btnCurrents = QtGui.QPushButton(DialogCurves)
+        self.btnCurrents.setObjectName(_fromUtf8("btnCurrents"))
+        self.verticalLayout_2.addWidget(self.btnCurrents)
         self.btnPause = QtGui.QPushButton(DialogCurves)
         self.btnPause.setObjectName(_fromUtf8("btnPause"))
         self.verticalLayout_2.addWidget(self.btnPause)
+        self.btnClear = QtGui.QPushButton(DialogCurves)
+        self.btnClear.setObjectName(_fromUtf8("btnClear"))
+        self.verticalLayout_2.addWidget(self.btnClear)
+        self.btnAutoRange = QtGui.QPushButton(DialogCurves)
+        self.btnAutoRange.setObjectName(_fromUtf8("btnAutoRange"))
+        self.verticalLayout_2.addWidget(self.btnAutoRange)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem)
-        self.gridLayout_2.addLayout(self.verticalLayout_2, 0, 1, 1, 1)
-        self.gridLayout_2.setColumnMinimumWidth(0, 4)
+        self.gridLayout_2.addLayout(self.verticalLayout_2, 0, 2, 1, 1)
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_2.addItem(spacerItem1, 0, 1, 1, 1)
+        self.gridLayout_2.setColumnMinimumWidth(0, 40)
 
         self.retranslateUi(DialogCurves)
         QtCore.QMetaObject.connectSlotsByName(DialogCurves)
@@ -77,5 +93,8 @@ class Ui_DialogCurves(object):
         self.btnShift.setText(_translate("DialogCurves", "Shift", None))
         self.btnRemove.setText(_translate("DialogCurves", "Remove", None))
         self.btnCLoop.setText(_translate("DialogCurves", "CLoop", None))
+        self.btnCurrents.setText(_translate("DialogCurves", "Currents", None))
         self.btnPause.setText(_translate("DialogCurves", "Pause", None))
+        self.btnClear.setText(_translate("DialogCurves", "Clear", None))
+        self.btnAutoRange.setText(_translate("DialogCurves", "Autorange Ys", None))
 
