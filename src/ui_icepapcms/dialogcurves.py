@@ -446,7 +446,8 @@ class DialogCurves(QtGui.QDialog):
         command = "?_FPOS MEASURE %d"%addr
         ans = self.driver.sendWriteReadCommand(command)
         if not 'ERROR' in ans:
-            return self.driver.parseResponse('_?FPOS', ans)
+            return ans.split(' ')[1]
+            #return self.driver.parseResponse('_?FPOS', ans)
         # OLD MCPUs do not support ?_FPOS
         command = "?FPOS MEASURE %d"%addr
         ans = self.driver.sendWriteReadCommand(command)
@@ -482,9 +483,10 @@ class DialogCurves(QtGui.QDialog):
         for i in range(0, self.ui.listCurves.count()):
             self.removeCurve(self.curveItems[i])
         self.addSignal(self.icepapAddress, 0, 1)# signalNb, plotAxisNb)
-        self.addSignal(self.icepapAddress, 10, 2)
+        self.addSignal(self.icepapAddress, 12, 2)
         self.addSignal(self.icepapAddress, 11, 2)
         self.addSignal(self.icepapAddress, 18, 3)
+        self.addSignal(self.icepapAddress, 19, 3)
         self.addSignal(self.icepapAddress, 20, 3)
         self.addSignal(self.icepapAddress, 21, 3)
         #self.addSignal(self.icepapAddress, 21, 3)
@@ -544,6 +546,6 @@ class DialogCurves(QtGui.QDialog):
                     self.clear = False
                 ci.curve.setData(x=ci.arrayTime, y=ci.arrayVal)
             else:
-                print('Failed to update curve for ' + ci.source + '!')
+                print('Failed to update curve for ' + ci.signal + '!')
 
         self.ticker.start(self.tickInterval)
