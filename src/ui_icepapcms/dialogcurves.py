@@ -58,6 +58,7 @@ class DialogCurves(QtGui.QDialog):
     def __init__(self, parent, drv):
         QtGui.QDialog.__init__(self, parent)
         self.ui = Ui_DialogCurves()
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         self.driver = IcepapController().iPaps[drv.icepapsystem_name]
         self.icepapAddress = drv.addr
         self.ui.setupUi(self)
@@ -205,6 +206,7 @@ class DialogCurves(QtGui.QDialog):
         self.proxy = pg.SignalProxy(self.pw.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
 
         self.axes[0].vb.sigResized.connect(self.updateViews)
+
 
     def updateViews(self):
         ## view has resized; update auxiliary views to match
@@ -446,11 +448,11 @@ class DialogCurves(QtGui.QDialog):
         command = "?_FPOS MEASURE %d"%addr
         ans = self.driver.sendWriteReadCommand(command)
         if not 'ERROR' in ans:
-            return ans.split(' ')[1]
-            #return self.driver.parseResponse('_?FPOS', ans)
+            return self.driver.parseResponse('?_FPOS', ans)
         # OLD MCPUs do not support ?_FPOS
         command = "?FPOS MEASURE %d"%addr
         ans = self.driver.sendWriteReadCommand(command)
+        print 'sending fpos instead:', ans
         return self.driver.parseResponse('?FPOS', ans)
 
     def addedCurve(self, ci):
