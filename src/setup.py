@@ -8,7 +8,7 @@ if os.name == 'nt': #sys.platform == 'win32':
     import py2exe
 
 setup(name = "icepapcms",
-      version = "2.1",
+      version = "2.2",
       description = "Icepap Configuration Management System and Test Tool",
       author = "Guifre Cuni",
       author_email = "gcuni@cells.es",
