@@ -1,7 +1,7 @@
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           icepapcms
-Version:        2.1
+Version:        2.2
 Release:        1%{?dist}.maxlab
 Summary:        IcePAP CMS application
 
